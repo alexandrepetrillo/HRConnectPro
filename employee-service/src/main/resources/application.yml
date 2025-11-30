@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: employee-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hrconnect?currentSchema=employee
+    username: hrconnect
+    password: hrconnect
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: employee
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: employee
+    default-schema: employee
+    create-schemas: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+    properties:
+      spring.json.add.type.headers: false
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    com.hrconnect.employee: DEBUG
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.security: DEBUG
+
+# OpenAPI / Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+
+# JWT Configuration
+jwt:
+  secret: hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256
+  validity: 3600000  # 1 heure en millisecondes
+
+# LDAP Configuration (désactivé par défaut, utilise in-memory)
+ldap:
+  enabled: true
+  url: ldap://localhost:389
+  base-dn: dc=hrconnect,dc=local
+  user-dn-pattern: uid={0},ou=users
+  manager-dn: cn=admin,dc=hrconnect,dc=local
+  manager-password: admin
+
