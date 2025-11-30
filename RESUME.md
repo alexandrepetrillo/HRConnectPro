@@ -2,15 +2,17 @@
 
 ## 📦 Ce qui a été réalisé
 
-### ✅ 6 Commits Git - Progression étape par étape
+### ✅ 8 Commits Git - Progression étape par étape
 
 ```
 📌 ad16ac9 - Initialisation projet (infrastructure Docker)
 📌 fd912c7 - Employee-Service complet (Clean Architecture + Kafka)
 📌 20f9a67 - Pattern Transactional Outbox (Cohérence DB + Kafka)
-📌 4222f1d - Guides et scripts de test
+📌 4222f1d - Guides et scripts de test Outbox
 📌 5e7815c - Documentation historique Git
 📌 eb1461a - Tableau de bord avancement
+📌 03158f8 - Résumé visuel complet
+📌 xxxxxxx - Authentification LDAP + JWT (TP4)
 ```
 
 ### 📂 Structure du projet
@@ -18,12 +20,14 @@
 ```
 HRConnectPro/
 │
-├── 📋 Documentation (7 fichiers .md - 57.7 KB)
+├── 📋 Documentation (9 fichiers .md)
 │   ├── README.md ...................... Vue d'ensemble
 │   ├── PLAN_TP.md ..................... Plan 3 jours détaillé
 │   ├── ETAT_AVANCEMENT.md ............. Tableau de bord
-│   ├── GIT_COMMITS_HISTORY.md ......... Historique complet
-│   ├── TEST_OUTBOX.md ................. Guide de test
+│   ├── GIT_COMMITS_HISTORY.MD ......... Historique complet
+│   ├── RESUME.md ...................... Résumé visuel
+│   ├── TEST_OUTBOX.md ................. Guide de test Outbox
+│   ├── TEST_AUTH.md ................... Guide de test JWT/LDAP
 │   ├── QUICK_START.md ................. Démarrage rapide
 │   └── A_MONTRER.md ................... Objectifs pédagogiques
 │
@@ -49,10 +53,16 @@ HRConnectPro/
 │   │   ├── EmployeeEventPublisher ..... Publication Kafka
 │   │   ├── OutboxService.java ......... Écriture Outbox
 │   │   ├── OutboxPublisher.java ....... Scheduler polling
-│   │   └── OpenApiConfig.java ......... Swagger
+│   │   ├── OpenApiConfig.java ......... Swagger
+│   │   └── Security (LDAP + JWT)
+│   │       ├── JwtTokenProvider.java .. Génération/validation JWT
+│   │       ├── JwtAuthenticationFilter  Filtre de validation
+│   │       └── SecurityConfig.java .... Spring Security config
 │   │
 │   ├── Presentation Layer
-│   │   └── EmployeeController.java .... REST API CRUD
+│   │   ├── EmployeeController.java .... REST API CRUD
+│   │   ├── AuthController.java ........ Login + JWT
+│   │   └── DTOs ....................... LoginRequest, JwtResponse
 │   │
 │   ├── Database Migrations (Flyway)
 │   │   ├── V001__create_employees_table.sql
@@ -60,10 +70,11 @@ HRConnectPro/
 │   │   └── V003__create_outbox_events_table.sql
 │   │
 │   └── Configuration
-│       └── application.yml ............ PostgreSQL, Kafka, Actuator
+│       └── application.yml ............ PostgreSQL, Kafka, Actuator, JWT, LDAP
 │
 ├── 🧪 Scripts de test
 │   ├── test_api.sh .................... Test API automatisé
+│   ├── test_auth.sh ................... Test authentification JWT
 │   └── test_outbox.sql ................ Requêtes SQL utiles
 │
 └── 📦 Configuration Maven
@@ -102,6 +113,15 @@ HRConnectPro/
 - Logs structurés
 - OpenAPI / Swagger UI
 
+**✅ Sécurité**
+- Authentification LDAP (ou in-memory pour tests)
+- Génération et validation JWT
+- Protection des endpoints par rôle (RBAC)
+- Session stateless (JWT uniquement)
+- Endpoints publics : /api/auth/*, /swagger-ui/*, /actuator/health
+- Endpoints protégés : /api/employees/* (ROLE_HR)
+- Endpoints admin : /actuator/* (ROLE_ADMIN)
+
 **✅ Base de données**
 - PostgreSQL
 - Flyway migrations
@@ -128,6 +148,14 @@ HRConnectPro/
 - Test 2: Simulation panne Kafka + recovery
 - Test 3: Mise à jour + événements multiples
 
+**Guide de test (`TEST_AUTH.md`):**
+- Test 1: Login et obtention du token JWT
+- Test 2: Accès aux endpoints protégés
+- Test 3: Tests des rôles RBAC (HR/ADMIN)
+- Test 4: Infos utilisateur connecté (/api/auth/me)
+- Test 5: Token invalide ou expiré
+- Test 6: Script automatisé (test_auth.sh)
+
 ### 🔧 Services & URLs
 
 | Service | URL | Utilisation |
@@ -142,11 +170,11 @@ HRConnectPro/
 
 ### 📊 Progression TP (Plan 3 jours)
 
-**Jour 1 : Fondation & Architecture** (75% complété)
+**Jour 1 : Fondation & Architecture** (✅ 100% complété)
 - ✅ TP1 : Employee-Service + CRUD + Kafka
 - ✅ TP2 : Publication événements snapshot
 - ✅ TP3 : Pattern Transactional Outbox
-- ⏳ TP4 : LDAP + JWT (à faire)
+- ✅ TP4 : LDAP + JWT (sécurité)
 
 **Jour 2 : Événements & Communication** (0% - à faire)
 - ⏳ TP5 : Leave-Service (Consumer Kafka)
@@ -251,14 +279,17 @@ git show --name-only <commit-hash>
 
 ### 🎯 Prochaines étapes recommandées
 
-**Option 1 : Continuer Jour 1**
-→ Implémenter TP4 (LDAP + JWT) pour sécuriser l'API
+**✅ Jour 1 : COMPLET !**
+Tous les TPs du Jour 1 sont terminés (TP1-TP4)
 
-**Option 2 : Passer au Jour 2**
+**Option 1 : Passer au Jour 2**
 → Créer Leave-Service (TP5) pour consommer les événements Employee
 
-**Option 3 : Approfondir Outbox**
+**Option 2 : Approfondir le code existant**
 → Ajouter des tests d'intégration avec Testcontainers
+
+**Option 3 : Tester l'ensemble**
+→ Lancer l'infrastructure + Employee-Service et tester tous les endpoints
 
 ### 📞 Ressources
 
@@ -272,7 +303,9 @@ git show --name-only <commit-hash>
 
 **✨ Projet prêt pour la formation BAC+5 !**
 
-**6 commits Git** | **57.7 KB de documentation** | **15 fichiers Java** | **3 migrations SQL** | **2 scripts de test**
+**8 commits Git** | **9 fichiers .md** | **20+ fichiers Java** | **3 migrations SQL** | **3 scripts de test**
 
-**Architecture Clean** | **Event-Driven** | **Pattern Outbox** | **Observabilité** | **Production-Ready**
+**Architecture Clean** | **Event-Driven** | **Pattern Outbox** | **Sécurité JWT** | **Observabilité** | **Production-Ready**
+
+**Jour 1 : 100% COMPLET ✅**
 

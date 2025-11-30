@@ -39,14 +39,21 @@ HRConnectPro/
 # Rendre les scripts exécutables
 chmod +x start-infra.sh stop-infra.sh
 
-# Démarrer PostgreSQL, Kafka, Prometheus, Grafana
+# Démarrer PostgreSQL, Kafka, Prometheus, Grafana, LDAP
+# Ce script démarre tout et initialise LDAP automatiquement
 ./start-infra.sh
 ```
+
+Le script `start-infra.sh` fait automatiquement :
+- ✅ Démarrage de tous les conteneurs Docker
+- ✅ Vérification de PostgreSQL et Kafka
+- ✅ Initialisation de LDAP avec des utilisateurs de test
+- ✅ Vérification du schéma de base de données
 
 Vérifiez que tout est démarré :
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 Vous devriez voir :
@@ -247,10 +254,20 @@ docker-compose logs kafka
 
 ## 📚 Prochaines étapes (TP2)
 
-1. Implémenter l'authentification LDAP + JWT
+1. **Authentification LDAP + JWT** (voir [LDAP.md](LDAP.md))
 2. Ajouter l'Outbox pattern pour garantir la publication transactionnelle
 3. Créer des tests d'intégration avec Testcontainers
 4. Configurer le tracing distribué (Jaeger)
+
+## 🔐 Authentification
+
+LDAP est configuré automatiquement au démarrage de Docker Compose.  
+**Voir le guide complet : [LDAP.md](LDAP.md)**
+
+**Utilisateurs disponibles :**
+- `admin` / `password` (ROLE_ADMIN)
+- `hruser` / `password` (ROLE_HR)
+- `manager` / `password` (ROLE_MANAGER)
 
 ## 🆘 Aide
 

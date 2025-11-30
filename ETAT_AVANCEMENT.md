@@ -10,18 +10,21 @@
 20f9a67 - feat(employee-service): Pattern Transactional Outbox  
 xxxxxxx - feat(employee-service): Microservice complet
 xxxxxxx - feat: Initialisation projet Maven multi-module
+xxxxxxx - docs: tableau de bord d'avancement
+xxxxxxx - docs: résumé visuel complet
+xxxxxxx - feat(employee-service): authentification LDAP + JWT
 ```
 
 ## 📊 Progression du TP
 
-### ✅ Jour 1 - Complété (3/4 TPs)
+### ✅ Jour 1 - Complété (4/4 TPs) - 100%
 
 | TP | Statut | Description | Commit |
 |----|--------|-------------|--------|
 | TP1 | ✅ | Employee-Service avec CRUD + Kafka | 2 |
 | TP2 | ✅ | Publication événements Kafka (snapshot) | 2 |
 | TP3 | ✅ | Pattern Transactional Outbox | 3 |
-| TP4 | ⏳ | LDAP + JWT (Sécurité) | - |
+| TP4 | ✅ | LDAP + JWT (Sécurité) | 8 |
 
 ### ⏳ Jour 2 - À faire
 
