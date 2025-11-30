@@ -19,4 +19,3 @@ echo ""
 echo "💡 Pour supprimer aussi les volumes (données) :"
 echo "   $DOCKER_COMPOSE down -v"
 echo ""
-

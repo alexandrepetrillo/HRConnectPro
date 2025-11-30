@@ -25,19 +25,6 @@ spring:
     schemas: employee
     default-schema: employee
 
-  kafka:
-    bootstrap-servers: localhost:9093
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
-      properties:
-        enable.idempotence: true
-        max.in.flight.requests.per.connection: 5
-    properties:
-      spring.json.add.type.headers: false
-
 server:
   port: 8081
 
@@ -57,17 +44,4 @@ springdoc:
     path: /swagger-ui.html
     enabled: true
 
-# JWT Configuration
-jwt:
-  secret: hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256
-  validity: 3600000  # 1 heure en millisecondes
-
-# LDAP Configuration (désactivé par défaut, utilise in-memory)
-ldap:
-  enabled: true
-  url: ldap://localhost:389
-  base-dn: dc=hrconnect,dc=local
-  user-dn-pattern: uid={0},ou=users
-  manager-dn: cn=admin,dc=hrconnect,dc=local
-  manager-password: admin
 

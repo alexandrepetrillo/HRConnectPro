@@ -41,7 +41,7 @@ fi
 # Vérifier Kafka
 echo ""
 echo "4️⃣  Vérification Kafka..."
-$DOCKER_COMPOSE exec -T kafka kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1
+$DOCKER_COMPOSE exec -T kafka kafka-broker-api-versions --bootstrap-server localhost:9093 > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "   ✅ Kafka est prêt"
 else
@@ -51,15 +51,14 @@ fi
 echo ""
 echo "✅ Infrastructure démarrée!"
 echo ""
-echo "📋 Services disponibles :"
-echo "   - PostgreSQL: localhost:5432"
-echo "   - Kafka: localhost:9092"
-echo "   - Kafka UI: http://localhost:8080"
-echo "   - Prometheus: http://localhost:9090"
-echo "   - Grafana: http://localhost:3000 (admin/admin)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Infrastructure complètement initialisée !"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🔧 Pour lancer le microservice Employee :"
+echo "🌐 Services disponibles :"
+echo "   • PostgreSQL      : localhost:5433"
+echo ""
+echo "🚀 Prêt à démarrer l'application :"
 echo "   cd employee-service"
 echo "   mvn spring-boot:run"
 echo ""
-

@@ -1,0 +1,28 @@
+# Configuration Docker Compose pour les tests d'intégration avec Testcontainers
+#
+# Ce fichier contient la configuration complète pour les tests avec :
+# - Ports dynamiques (format "5432" au lieu de "5432:5432") pour éviter les conflits
+#   avec les conteneurs Docker Compose lancés pour le développement local
+# - Pas de container_name (non supporté par Testcontainers)
+# - Pas de networks/volumes persistants (gérés par Testcontainers)
+#
+# Usage par Testcontainers : new DockerComposeContainer(new File("../docker-compose.test.yml"))
+# Avantage : vous pouvez lancer les tests SANS arrêter votre environnement Docker local !
+
+services:
+  # PostgreSQL pour Employee Service
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hrconnect
+      POSTGRES_USER: hrconnect
+      POSTGRES_PASSWORD: hrconnect
+    ports:
+      - "5432"  # Port dynamique choisi par Testcontainers
+    volumes:
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hrconnect -d hrconnect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
