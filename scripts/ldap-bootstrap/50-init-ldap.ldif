@@ -1,0 +1,91 @@
+dn: ou=users,dc=hrconnect,dc=local
+objectClass: organizationalUnit
+ou: users
+description: Utilisateurs HRConnect
+
+dn: ou=groups,dc=hrconnect,dc=local
+objectClass: organizationalUnit
+ou: groups
+description: Groupes HRConnect
+
+dn: uid=admin,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: admin
+cn: Admin User
+sn: User
+givenName: Admin
+mail: admin@hrconnect.local
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/admin
+loginShell: /bin/bash
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+dn: uid=hruser,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: hruser
+cn: HR User
+sn: User
+givenName: HR
+mail: hr@hrconnect.local
+uidNumber: 10002
+gidNumber: 10002
+homeDirectory: /home/hruser
+loginShell: /bin/bash
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+dn: uid=manager,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: manager
+cn: Manager User
+sn: User
+givenName: Manager
+mail: manager@hrconnect.local
+uidNumber: 10003
+gidNumber: 10003
+homeDirectory: /home/manager
+loginShell: /bin/bash
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+dn: uid=employee,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: employee
+cn: John Doe
+sn: Doe
+givenName: John
+mail: john.doe@hrconnect.local
+uidNumber: 10004
+gidNumber: 10004
+homeDirectory: /home/employee
+loginShell: /bin/bash
+employeeNumber: EMP001
+title: Software Developer
+departmentNumber: IT
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+dn: cn=admins,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: admins
+description: Administrateurs HRConnect
+member: uid=admin,ou=users,dc=hrconnect,dc=local
+
+dn: cn=hr,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: hr
+description: Ressources Humaines
+member: uid=hruser,ou=users,dc=hrconnect,dc=local
+
+dn: cn=managers,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: managers
+description: Managers
+member: uid=manager,ou=users,dc=hrconnect,dc=local
+

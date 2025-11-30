@@ -100,10 +100,47 @@ services:
     networks:
       - hrconnect-network
 
+  # OpenLDAP (optionnel - pour l'authentification)
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: hrconnect-ldap
+    environment:
+      LDAP_ORGANISATION: "HRConnect"
+      LDAP_DOMAIN: "hrconnect.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_TLS_VERIFY_CLIENT: "never"
+      LDAP_SEED_INTERNAL_LDIF_PATH: "/home/ldif"
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ldap-data:/var/lib/ldap
+      - ./scripts/ldap-bootstrap:/home/ldif
+    networks:
+      - hrconnect-network
+
+  # phpLDAPadmin (interface web pour gérer LDAP)
+  ldap-admin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: hrconnect-ldap-admin
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: ldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8082:80"
+    depends_on:
+      - ldap
+    networks:
+      - hrconnect-network
+
 volumes:
   postgres-data:
   prometheus-data:
   grafana-data:
+  ldap-data:
 
 networks:
   hrconnect-network:
