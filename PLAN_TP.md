@@ -76,13 +76,189 @@
 
 ---
 
-### 14h00 - 15h00 | 📊 **Théorie : Messaging & Kafka (1h)**
+### 14h00 - 14h45 | 🛠️ **TP1b : Communication REST synchrone & ses limites (45 min)** ⚠️ À IMPLÉMENTER
+
+> **Statut** : 🔴 Non implémenté - À faire avant de passer à Kafka
+
+**📺 Démonstration formateur (15 min) :**
+
+**Objectif pédagogique** : Montrer l'approche "classique" REST synchrone et ses problèmes avant d'introduire Kafka comme solution.
+
+---
+
+#### Scénario 1 : Couplage fort (simple)
+
+**Situation** : Leave-Service doit valider qu'un employé existe avant de créer un congé.
+
+```java
+// LeaveService.java - Version synchrone (problématique)
+@Service
+public class LeaveService {
+    
+    private final RestTemplate restTemplate;
+    
+    public Leave createLeave(LeaveRequest request) {
+        // ⚠️ Appel synchrone à Employee-Service
+        ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(
+            "http://localhost:8081/api/employees/" + request.getEmployeeId(),
+            EmployeeDTO.class
+        );
+        
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new EmployeeNotFoundException(request.getEmployeeId());
+        }
+        
+        // Créer le congé
+        return leaveRepository.save(mapToLeave(request));
+    }
+}
+```
+
+**Problèmes démontrés** : couplage fort, timeout, cascade de pannes.
+
+---
+
+#### Scénario 2 : Transaction distribuée (clé !) 🔥
+
+**Situation** : À la création d'un employé, il faut initialiser son compteur de congés (25j CP, 12j RTT) dans Leave-Service.
+
+```
+Employee-Service                         Leave-Service
+     |                                        |
+     |  1. POST /employees                    |
+     |  2. Créer employé en DB           ✅   |
+     |  3. Initialiser compteur ──────────────> POST /api/leave-counters
+     |     congés pour ce nouvel              |  4. Créer compteur (25j CP, 12j RTT)
+     |     employé                            |  ❌ CRASH / TIMEOUT
+     |                                        |
+     |  Employé créé                          |  Compteur NON initialisé
+     |  → Il ne pourra JAMAIS poser          |
+     |    de congés !                         |
+```
+
+**Code problématique :**
+```java
+// EmployeeService.java - Version synchrone (DANGER !)
+@Service
+public class EmployeeService {
+
+    private final RestTemplate restTemplate;
+    private final EmployeeRepository employeeRepository;
+
+    @Transactional // ⚠️ Transaction LOCALE uniquement !
+    public Employee createEmployee(EmployeeRequest request) {
+        // 1. Créer l'employé (transaction locale)
+        Employee employee = employeeRepository.save(mapToEmployee(request));
+        // → COMMIT local effectué ici
+
+        // 2. Initialiser le compteur congés chez Leave-Service
+        // ⚠️ HORS transaction ! Si cet appel échoue → INCOHÉRENCE
+        restTemplate.postForObject(
+            "http://localhost:9082/api/leave-counters",
+            new LeaveCounterInit(employee.getReference(), 25, 12),
+            Void.class
+        );
+        // → Si CRASH ICI : employé créé MAIS pas de compteur congés !
+
+        return employee;
+    }
+}
+```
+
+**Impact métier :**
+
+| Situation | Conséquence |
+|-----------|-------------|
+| Employé créé, compteur non initialisé | L'employé ne peut pas poser de congés (solde = null) |
+| Compteur créé, employé non créé | Compteur orphelin, données incohérentes |
+| Retry sans idempotence | Risque de double compteur |
+
+**Pourquoi c'est insoluble en REST synchrone ?**
+- Pas de transaction distribuée native en REST
+- 2-Phase Commit (2PC) : complexe, lent, SPOF
+- Saga pattern : faisable mais compensation manuelle = code spaghetti
+
+---
+
+**🧑‍💻 TP guidé étudiant (20 min) :**
+- [ ] Créer un endpoint `/api/leave-counters` dans Leave-Service
+- [ ] Modifier Employee-Service pour appeler cet endpoint à la création
+- [ ] Tester le flux nominal (créer employé → compteur initialisé)
+- [ ] Simuler un crash de Leave-Service après création de l'employé
+- [ ] Observer l'incohérence : employé sans compteur
+
+**⚠️ Démonstration des problèmes (10 min) :**
+
+| Problème | Démonstration | Impact |
+|----------|---------------|--------|
+| **Couplage fort** | Leave-Service down → Employee ne peut pas créer | Dépendance runtime |
+| **Timeout** | Arrêter Leave-Service → Employee bloque 30s | UX dégradée |
+| **Transaction distribuée** | Employé créé, compteur non initialisé | Incohérence métier grave |
+| **Retry complexe** | Retry = double compteur ? Idempotence ? | Code complexe |
+| **Circuit Breaker** | Créer employé sans compteur ? Rollback ? | Décision métier difficile |
+
+**Script de démonstration :**
+```bash
+# 1. Démarrer les deux services
+cd employee/employee-service && mvn spring-boot:run &
+cd leave-service && mvn spring-boot:run &
+
+# 2. Créer un employé → ✅ fonctionne
+curl -X POST http://localhost:8081/api/employees \
+  -H "Content-Type: application/json" \
+  -d '{"nom":"Alice","email":"alice@test.com"}'
+
+# 3. Vérifier le compteur → ✅ initialisé
+curl http://localhost:9082/api/leave-counters/EMP-001
+# → {"soldeCP": 25, "soldeRTT": 12}
+
+# 4. ARRÊTER Leave-Service
+pkill -f leave-service
+
+# 5. Créer un autre employé
+curl -X POST http://localhost:8081/api/employees \
+  -H "Content-Type: application/json" \
+  -d '{"nom":"Bob","email":"bob@test.com"}'
+# → Timeout après 30s puis erreur 500 (ou employé créé sans compteur)
+
+# 6. Redémarrer Leave-Service
+cd leave-service && mvn spring-boot:run &
+
+# 7. Vérifier : Bob existe mais n'a PAS de compteur !
+curl http://localhost:8081/api/employees/EMP-002  # → ✅ Bob existe
+curl http://localhost:9082/api/leave-counters/EMP-002  # → ❌ 404 Not Found
+
+# 8. Bob ne peut pas poser de congés → INCOHÉRENCE MÉTIER
+```
+
+**Questions à poser aux étudiants :**
+1. "Comment garantir que l'employé ET son compteur sont créés ensemble ?"
+2. "Quelle solution si on ne peut pas faire de transaction distribuée ?"
+3. "Comment Leave-Service peut-il initialiser le compteur sans appel REST ?"
+
+**Réponse attendue → Transition vers Kafka :**
+> "Au lieu que Employee appelle Leave, Employee publie un événement. Leave consomme cet événement et initialise le compteur LOCALEMENT, dans sa propre transaction. C'est l'eventual consistency."
+
+**Transition vers Kafka :**
+> "On a vu les limites du REST synchrone. Maintenant, voyons comment l'architecture event-driven avec Kafka résout ces problèmes..."
+
+---
+
+### 14h45 - 15h30 | 📊 **Théorie : Messaging & Kafka - La solution (45 min)**
 
 **Slides à présenter :**
+
+**Rappel des problèmes REST synchrone :**
+- Couplage fort, latence, cascade de pannes, transactions distribuées
+
+**Kafka comme solution :**
 - Introduction à Apache Kafka
   - Topics, partitions, offsets
   - Producers & Consumers
   - Garanties de livraison (at-most-once, at-least-once, exactly-once)
+- **Data locality** : chaque service stocke localement ce dont il a besoin
+  - Projection `EmployeeSnapshot` dans Leave-Service
+  - Autonomie totale : Leave fonctionne même si Employee est down
 - Spring Kafka
   - Configuration producer/consumer
   - KafkaTemplate, @KafkaListener
@@ -90,16 +266,25 @@
 - Modèle d'événements snapshot
   - Structure : eventId, timestamp, version, source, payload
   - Avantages pour les consommateurs downstream
-- Schémas d'événements (JSON Schema)
-  - Validation, versioning, compatibilité
 - Pattern Outbox (aperçu - détails J2)
   - Garantir cohérence transactionnelle DB + Kafka
 
-**Questions/échanges : 15 min**
+**Comparaison REST vs Event-Driven :**
+
+| Aspect | REST Synchrone | Event-Driven (Kafka) |
+|--------|----------------|----------------------|
+| Couplage | Fort (runtime) | Faible (design-time) |
+| Disponibilité | Dépend des autres | Autonome |
+| Latence | Ajoutée à chaque appel | Pas d'appel réseau |
+| Résilience | Cascade de pannes | Isolation des pannes |
+| Transactions | Distribuées (complexe) | Locales + Outbox |
+| Scalabilité | Limitée | Horizontale |
+
+**Questions/échanges : 10 min**
 
 ---
 
-### 15h00 - 16h30 | 🛠️ **TP2 : Publication d'événements Kafka (1h30)**
+### 15h30 - 16h30 | 🛠️ **TP2 : Publication d'événements Kafka (1h)**
 
 **📺 Démonstration formateur (20 min) :**
 - Création de `EmployeeStateEvent` (événement snapshot)
@@ -110,7 +295,7 @@
 - Intégration dans `EmployeeService` (après create/update)
 - Visualisation dans Kafka UI
 
-**🧑‍💻 TP guidé étudiant (1h10) :**
+**🧑‍💻 TP guidé étudiant (40 min) :**
 - [ ] Créer la classe `EmployeeStateEvent` avec tous les champs
   - eventId (UUID), timestamp, version, source, employee (snapshot)
 - [ ] Créer `EmployeeEventPublisher` avec `@Component`
@@ -303,32 +488,132 @@
 
 ---
 
-### 16h45 - 18h00 | 🛠️ **TP6 : Interview-Service & Payroll-Service (architecture) (1h15)**
+### 16h45 - 17h15 | 🛠️ **TP5b : Refactoring Multi-module Maven (30 min)**
 
-**📺 Démonstration formateur (30 min) :**
-- Création rapide de `interview-service` (même pattern)
-  - Consomme `employee.state`
-  - Publie `interview.state` (avec augmentation accordée)
-- Création de `payroll-service`
-  - Consomme `employee.state`, `leave.state`, `interview.state`
-  - Calcul de la paie : salaire base + augmentation - retenues (jours absents)
-  - Publie `payroll.state`
+**📺 Démonstration formateur (10 min) :**
+- Problématique : duplication du DTO `EmployeeState` entre services
+- Solution : module Maven partagé `employee-contract`
+- Structure multi-module :
+  ```
+  employee/                     # Module parent (pom)
+  ├── pom.xml
+  ├── employee-contract/        # DTOs partagés
+  │   └── EmployeeState.java
+  └── employee-service/         # Service complet
+  ```
+- Avantages : couplage faible, contrats explicites
 
-**🧑‍💻 TP guidé étudiant (45 min) :**
-- [ ] Créer `interview-service` (structure similaire)
-  - Entité `Interview` (id, employeeId, date, feedback, augmentation)
-  - Consumer employee.state
-  - Publisher interview.state
-- [ ] Créer `payroll-service`
-  - Projections locales : EmployeeSnapshot, LeaveSnapshot, InterviewSnapshot
-  - 3 consumers Kafka
-  - Service de calcul `PayrollCalculationService`
-  - Publication de `payroll.state`
-- [ ] Tester un flux complet end-to-end
+**🧑‍💻 TP guidé étudiant (20 min) :**
+- [ ] Créer le dossier `employee/` comme module parent
+- [ ] Déplacer `employee-service/` sous `employee/` avec `git mv`
+- [ ] Créer `employee-contract/` avec `EmployeeState.java`
+- [ ] Configurer les POMs (parent, contract, service)
+- [ ] Ajouter la dépendance `employee-contract` dans `leave-service`
+- [ ] Supprimer la classe `EmployeeState` dupliquée dans `leave-service`
+- [ ] Mettre à jour les imports
+- [ ] Compiler et tester
 
 **Livrables attendus :**
-- 4 microservices communicant par événements
-- Flux métier complet : Employee → Leave/Interview → Payroll
+- Structure multi-module fonctionnelle
+- `leave-service` dépend de `employee-contract`
+- Pas de duplication de code
+
+---
+
+### 17h15 - 18h00 | 🛠️ **TP6 : Interview-Service & Payroll-Service (45 min)**
+
+#### 📊 Discussion architecture (10 min) : Qui gère le salaire ?
+
+**Problématique à présenter aux étudiants :**
+> "Quand un entretien accorde une augmentation, comment l'intégrer dans le calcul de paie ?"
+
+**Option 1 : Interview impacte Employee**
+```
+Interview-Service → publie augmentation
+Employee-Service → consomme et met à jour le salaire
+Payroll-Service → consomme uniquement employee.state
+```
+- Employee devient la source de vérité unique pour le salaire
+- ⚠️ Employee devient aussi un consumer (complexité)
+
+**Option 2 : Payroll agrège tout** ← **CHOIX RETENU**
+```
+Employee-Service → publie salaire de base contractuel
+Interview-Service → publie augmentation accordée  
+Payroll-Service → consomme les 3 topics et calcule
+```
+- ✅ Illustre l'**agrégation multi-sources** (concept clé event-driven)
+- ✅ Chaque service reste simple (single responsibility)
+- ✅ Calcul métier centralisé dans Payroll
+- ✅ Pas d'appel REST → résilience totale
+
+**Transition :** "On va implémenter l'option 2. Interview-Service vous est fourni car il suit le même pattern que Leave-Service."
+
+---
+
+#### 📦 Interview-Service : FOURNI (5 min de présentation)
+
+> Ce service est fourni car il n'apporte pas de nouveaux concepts (même pattern : consumer + outbox + API REST).
+
+**Présentation rapide :**
+- Structure identique à Leave-Service
+- Consomme `employee.state` → projection `EmployeeSnapshot`
+- Publie `interview.state` avec l'augmentation accordée
+- API REST : CRUD entretiens
+
+**Événement `interview.state` :**
+```json
+{
+  "reference": "INT-2026-001",
+  "employeeId": "EMP-001",
+  "dateEntretien": "2026-01-15",
+  "augmentationAccordee": 2500.00,
+  "statut": "VALIDE"
+}
+```
+
+---
+
+#### 🛠️ Payroll-Service : À IMPLÉMENTER (30 min)
+
+**📺 Démonstration formateur (10 min) :**
+
+**Concept clé : Agrégation multi-sources**
+
+Payroll consomme **3 topics** et maintient **3 projections locales** :
+
+| Topic | Projection | Données |
+|-------|------------|---------|
+| `employee.state` | `EmployeeSnapshot` | Salaire de base |
+| `leave.state` | `LeaveSnapshot` | Jours d'absence |
+| `interview.state` | `InterviewSnapshot` | Augmentation |
+
+**Calcul de paie :**
+```java
+salaireNet = (salaireBase / 12) + (augmentation / 12) - retenues
+```
+
+**🧑‍💻 TP guidé étudiant (20 min) :**
+- [ ] Créer `payroll-service` (structure similaire)
+- [ ] Créer 3 projections : `EmployeeSnapshot`, `LeaveSnapshot`, `InterviewSnapshot`
+- [ ] Créer 3 consumers Kafka (un par topic)
+- [ ] Implémenter `PayrollCalculationService` avec le calcul métier
+- [ ] Créer l'API REST : `GET /api/payroll/{employeeId}?month=2026-01`
+- [ ] Tester le flux complet end-to-end
+
+**Test end-to-end :**
+```bash
+# 1. Créer un employé (salaire 48000€/an)
+# 2. Créer un entretien avec augmentation 2400€/an
+# 3. Créer un congé sans solde de 2 jours
+# 4. Appeler GET /api/payroll/EMP-001?month=2026-01
+# 5. Vérifier : (48000/12) + (2400/12) - (2j * tauxJournalier)
+```
+
+**Livrables attendus :**
+- Payroll-Service consomme 3 topics Kafka
+- Calcul de paie correct avec agrégation multi-sources
+- Aucun appel REST entre services → autonomie totale
 
 ---
 
