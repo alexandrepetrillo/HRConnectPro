@@ -2,7 +2,7 @@ package com.hrconnect.employee.application.service;
 
 import com.hrconnect.employee.domain.model.Employee;
 import com.hrconnect.employee.domain.repository.EmployeeRepository;
-import com.hrconnect.employee.infrastructure.event.EmployeeEventPublisher;
+import com.hrconnect.employee.infrastructure.outbox.OutboxService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +13,7 @@ import java.util.Optional;
 
 /**
  * Service métier pour la gestion des employés
+ * Utilise le pattern Outbox pour garantir la cohérence transactionnelle
  */
 @Service
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ import java.util.Optional;
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
-    private final EmployeeEventPublisher eventPublisher;
+    private final OutboxService outboxService;
 
     @Transactional(readOnly = true)
     public List<Employee> getAllEmployees() {
@@ -43,7 +44,8 @@ public class EmployeeService {
     }
 
     /**
-     * Crée un nouvel employé et publie l'événement
+     * Crée un nouvel employé et enregistre l'événement dans l'Outbox
+     * Pattern Outbox : garantit que l'événement sera publié même en cas de panne
      */
     @Transactional
     public Employee createEmployee(Employee employee) {
@@ -55,15 +57,15 @@ public class EmployeeService {
 
         Employee saved = employeeRepository.save(employee);
 
-        // Publication du snapshot
-        eventPublisher.publishEmployeeState(saved);
+        // Enregistrement dans l'Outbox (dans la même transaction)
+        outboxService.saveEmployeeEvent(saved, "EmployeeCreated");
 
-        log.info("Employee created and event published: {}", saved.getReference());
+        log.info("Employee created and event saved to outbox: {}", saved.getReference());
         return saved;
     }
 
     /**
-     * Met à jour un employé existant et publie l'événement
+     * Met à jour un employé existant et enregistre l'événement dans l'Outbox
      */
     @Transactional
     public Employee updateEmployee(String reference, Employee employee) {
@@ -84,10 +86,10 @@ public class EmployeeService {
 
         Employee updated = employeeRepository.save(existing);
 
-        // Publication du snapshot
-        eventPublisher.publishEmployeeState(updated);
+        // Enregistrement dans l'Outbox (dans la même transaction)
+        outboxService.saveEmployeeEvent(updated, "EmployeeUpdated");
 
-        log.info("Employee updated and event published: {}", updated.getReference());
+        log.info("Employee updated and event saved to outbox: {}", updated.getReference());
         return updated;
     }
 
