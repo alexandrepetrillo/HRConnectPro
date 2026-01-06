@@ -6,6 +6,7 @@ import com.hrconnect.employee.application.service.EmployeeService;
 import com.hrconnect.employee.domain.model.Employee;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +18,13 @@ import java.util.stream.Collectors;
 
 /**
  * Contrôleur REST pour la gestion des employés
+ * Nécessite le rôle HR ou ADMIN pour accéder à tous les endpoints
  */
 @RestController
 @RequestMapping("/api/employees")
 @RequiredArgsConstructor
 @Tag(name = "Employees", description = "API de gestion des employés")
+@RolesAllowed({"HR", "ADMIN"})
 public class EmployeeController {
 
     private final EmployeeService employeeService;

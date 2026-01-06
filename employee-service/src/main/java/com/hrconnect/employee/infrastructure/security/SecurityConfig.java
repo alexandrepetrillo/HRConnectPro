@@ -31,7 +31,7 @@ import org.springframework.util.StringUtils;
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -59,19 +59,18 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)  // ✅ DÉSACTIVER HTTP Basic
-            .formLogin(AbstractHttpConfigurer::disable)  // ✅ DÉSACTIVER Form Login
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Endpoints publics
-                .requestMatchers("/api/auth/**").permitAll()
+                // Endpoints publics (doivent être déclarés ici car avant le filtre JWT)
+                .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // Endpoints protégés - nécessite rôle HR
-                .requestMatchers("/api/employees/**").hasAnyRole("HR", "ADMIN")
+                // Actuator complet nécessite ADMIN
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
-                // Tout le reste nécessite authentification
+                // Tout le reste est géré par les annotations @PreAuthorize sur les contrôleurs
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions
@@ -79,6 +78,11 @@ public class SecurityConfig {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"message\":\"Unauthorized\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\":\"Access Denied\"}");
                 })
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

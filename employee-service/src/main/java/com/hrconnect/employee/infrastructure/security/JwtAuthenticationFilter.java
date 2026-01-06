@@ -43,6 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String rolesString = tokenProvider.getRoles(jwt);
 
                     List<SimpleGrantedAuthority> authorities = Arrays.stream(rolesString.split(","))
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
@@ -52,7 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    log.debug("Set Authentication in SecurityContext for user: {}", username);
+                    log.debug("Set Authentication in SecurityContext for user: {} with authorities: {}", username, authorities);
                 } else {
                     log.warn("Invalid JWT provided for request {}", request.getRequestURI());
                 }

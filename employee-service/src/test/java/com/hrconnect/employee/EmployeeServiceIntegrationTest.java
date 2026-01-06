@@ -6,49 +6,13 @@ import com.hrconnect.employee.domain.repository.EmployeeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+import org.springframework.http.*;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class EmployeeServiceIntegrationTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
-        .withDatabaseName("testdb")
-        .withUsername("test")
-        .withPassword("test");
-
-    @Container
-    static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
-    }
-
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private TestRestTemplate restTemplate;
+class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EmployeeRepository employeeRepository;
@@ -75,10 +39,13 @@ class EmployeeServiceIntegrationTest {
             .salaireAnnuelBase(48000.0)
             .build();
 
+        HttpEntity<EmployeeDTO> request = new HttpEntity<>(employeeDTO, createHrAuthHeaders());
+
         // When
-        ResponseEntity<EmployeeDTO> response = restTemplate.postForEntity(
-            "http://localhost:" + port + "/api/employees",
-            employeeDTO,
+        ResponseEntity<EmployeeDTO> response = restTemplate.exchange(
+            url("/api/employees"),
+            HttpMethod.POST,
+            request,
             EmployeeDTO.class
         );
 
@@ -110,9 +77,13 @@ class EmployeeServiceIntegrationTest {
             .build();
         employeeRepository.save(employee);
 
+        HttpEntity<Void> request = new HttpEntity<>(createHrAuthHeaders());
+
         // When
-        ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(
-            "http://localhost:" + port + "/api/employees/E002",
+        ResponseEntity<EmployeeDTO> response = restTemplate.exchange(
+            url("/api/employees/E002"),
+            HttpMethod.GET,
+            request,
             EmployeeDTO.class
         );
 
@@ -125,14 +96,46 @@ class EmployeeServiceIntegrationTest {
 
     @Test
     void shouldReturnNotFoundForNonExistentEmployee() {
+        HttpEntity<Void> request = new HttpEntity<>(createHrAuthHeaders());
+
         // When
-        ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(
-            "http://localhost:" + port + "/api/employees/E999",
+        ResponseEntity<EmployeeDTO> response = restTemplate.exchange(
+            url("/api/employees/E999"),
+            HttpMethod.GET,
+            request,
             EmployeeDTO.class
         );
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
-}
 
+    @Test
+    void shouldReturnUnauthorizedWithoutToken() {
+        // When - Requête sans token JWT
+        ResponseEntity<String> response = restTemplate.getForEntity(
+            url("/api/employees/E001"),
+            String.class
+        );
+
+        // Then - Doit retourner 401 Unauthorized
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void shouldReturnForbiddenWithWrongRole() {
+        // Given - Token avec un rôle non autorisé (USER au lieu de HR)
+        HttpEntity<Void> request = new HttpEntity<>(createAuthHeadersWithRole("ROLE_USER"));
+
+        // When
+        ResponseEntity<String> response = restTemplate.exchange(
+            url("/api/employees/E001"),
+            HttpMethod.GET,
+            request,
+            String.class
+        );
+
+        // Then - Doit retourner 403 Forbidden
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+}

@@ -6,10 +6,12 @@ import com.hrconnect.employee.presentation.dto.JwtResponse;
 import com.hrconnect.employee.presentation.dto.LoginRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +38,7 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
 
     @PostMapping("/login")
+    @PermitAll
     @Operation(summary = "Authentification et génération de token JWT")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         log.info("Login attempt for user: {}", loginRequest.getUsername());
@@ -94,6 +97,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Récupérer les informations de l'utilisateur connecté")
     public ResponseEntity<JwtResponse> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -25,7 +25,7 @@ public class JwtTokenProvider {
     private final long validityInMilliseconds;
 
     public JwtTokenProvider(
-            @Value("${jwt.secret:hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits}") String secret,
+            @Value("${jwt.secret:hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256}") String secret,
             @Value("${jwt.validity:3600000}") long validityInMilliseconds) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.validityInMilliseconds = validityInMilliseconds;
