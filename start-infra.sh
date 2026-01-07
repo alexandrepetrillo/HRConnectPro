@@ -23,6 +23,13 @@ echo ""
 echo "1️⃣  Démarrage des conteneurs Docker..."
 $DOCKER_COMPOSE up -d
 
+# Optionnel : démarrer aussi les outils de monitoring
+# Pour démarrer avec monitoring, utilisez: ./start-infra.sh --monitoring
+if [ "$1" == "--monitoring" ]; then
+    echo "   📊 Démarrage des outils de monitoring..."
+    COMPOSE_PROFILES=monitoring $DOCKER_COMPOSE up -d
+fi
+
 # Attendre que les services soient prêts
 echo ""
 echo "2️⃣  Attente du démarrage des services..."

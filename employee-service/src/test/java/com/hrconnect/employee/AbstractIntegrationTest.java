@@ -10,13 +10,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.containers.DockerComposeContainer;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -29,25 +27,41 @@ public abstract class AbstractIntegrationTest {
 
   // ==================== Conteneurs Testcontainers ====================
 
-  protected static PostgreSQLContainer<?> postgres;
-  protected static KafkaContainer kafka;
+  protected static DockerComposeContainer<?> environment;
 
   static {
-    postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine")).withDatabaseName("testdb").withUsername("test").withPassword("test");
-    postgres.start();
-
-    kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
-    kafka.start();
+    // Charge docker-compose.test.yml qui contient la configuration complète pour les tests
+    // avec ports dynamiques pour éviter les conflits avec l'environnement de dev local
+    environment = new DockerComposeContainer<>(new File("../docker-compose.test.yml"))
+      .withExposedService("postgres", 5432)
+      .withExposedService("kafka", 9092)
+      .withExposedService("ldap", 389);
+    environment.start();
   }
 
+  /**
+   * Configure les propriétés Spring Boot avec les ports dynamiques des conteneurs.
+   * INDISPENSABLE : sans cette méthode, l'application essaierait de se connecter
+   * aux ports par défaut (5432, 9092, etc.) au lieu des ports dynamiques.
+   */
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", postgres::getJdbcUrl);
-    registry.add("spring.datasource.username", postgres::getUsername);
-    registry.add("spring.datasource.password", postgres::getPassword);
-    registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
-    // Désactiver LDAP et utiliser l'authentification in-memory pour les tests
-    registry.add("ldap.enabled", () -> "false");
+    // PostgreSQL : récupère le port dynamique et configure la datasource
+    var postgresHost = environment.getServiceHost("postgres", 5432);
+    var postgresPort = environment.getServicePort("postgres", 5432);
+    registry.add("spring.datasource.url",
+      () -> String.format("jdbc:postgresql://%s:%d/hrconnect?currentSchema=employee", postgresHost, postgresPort));
+
+    // Kafka : récupère le port dynamique et configure le bootstrap server
+    String kafkaHost = environment.getServiceHost("kafka", 9092);
+    Integer kafkaPort = environment.getServicePort("kafka", 9092);
+    registry.add("spring.kafka.bootstrap-servers",
+      () -> String.format("%s:%d", kafkaHost, kafkaPort));
+
+    // LDAP : récupère le port dynamique (même si ldap.enabled=false en test)
+    String ldapHost = environment.getServiceHost("ldap", 389);
+    Integer ldapPort = environment.getServicePort("ldap", 389);
+    registry.add("ldap.url", () -> String.format("ldap://%s:%d", ldapHost, ldapPort));
   }
 
   // ==================== Beans injectés ====================

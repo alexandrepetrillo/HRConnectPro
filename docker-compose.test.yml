@@ -1,0 +1,76 @@
+# Configuration Docker Compose pour les tests d'intégration avec Testcontainers
+#
+# Ce fichier contient la configuration complète pour les tests avec :
+# - Ports dynamiques (format "5432" au lieu de "5432:5432") pour éviter les conflits
+#   avec les conteneurs Docker Compose lancés pour le développement local
+# - Pas de container_name (non supporté par Testcontainers)
+# - Pas de networks/volumes persistants (gérés par Testcontainers)
+#
+# Usage par Testcontainers : new DockerComposeContainer(new File("../docker-compose.test.yml"))
+# Avantage : vous pouvez lancer les tests SANS arrêter votre environnement Docker local !
+
+services:
+  # PostgreSQL pour Employee Service
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hrconnect
+      POSTGRES_USER: hrconnect
+      POSTGRES_PASSWORD: hrconnect
+    ports:
+      - "5432"  # Port dynamique choisi par Testcontainers
+    volumes:
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hrconnect -d hrconnect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka & Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181"  # Port dynamique
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092"  # Port dynamique
+      - "29092"  # Port interne
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # OpenLDAP (pour l'authentification)
+  ldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: "HRConnect"
+      LDAP_DOMAIN: "hrconnect.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_TLS_VERIFY_CLIENT: "never"
+      LDAP_SEED_INTERNAL_LDIF_PATH: "/home/ldif"
+    ports:
+      - "389"  # Port dynamique
+      - "636"  # Port dynamique
+    volumes:
+      - ./scripts/ldap-bootstrap:/home/ldif

@@ -1,3 +1,13 @@
+# Configuration Docker Compose pour le développement local
+#
+# Ce fichier contient la configuration complète avec :
+# - Les container_name pour faciliter l'identification
+# - Les ports fixes (5432:5432, etc.)
+# - Les networks et volumes persistants
+#
+# Usage : docker compose up -d
+# Pour monitoring : docker compose --profile monitoring up -d
+
 services:
   # PostgreSQL pour Employee Service
   postgres:
@@ -56,51 +66,7 @@ services:
     networks:
       - hrconnect-network
 
-  # Kafka UI (optionnel, pour visualiser les topics)
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: hrconnect-kafka-ui
-    depends_on:
-      - kafka
-    ports:
-      - "8080:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: hrconnect
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    networks:
-      - hrconnect-network
-
-  # Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: hrconnect-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    networks:
-      - hrconnect-network
-
-  # Grafana
-  grafana:
-    image: grafana/grafana:latest
-    container_name: hrconnect-grafana
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    volumes:
-      - grafana-data:/var/lib/grafana
-    networks:
-      - hrconnect-network
-
-  # OpenLDAP (optionnel - pour l'authentification)
+  # OpenLDAP (pour l'authentification)
   ldap:
     image: osixia/openldap:1.5.0
     container_name: hrconnect-ldap
@@ -122,10 +88,58 @@ services:
     networks:
       - hrconnect-network
 
+  # Kafka UI (optionnel, pour visualiser les topics)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: hrconnect-kafka-ui
+    profiles: ["monitoring"]
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: hrconnect
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - hrconnect-network
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hrconnect-prometheus
+    profiles: ["monitoring"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - hrconnect-network
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hrconnect-grafana
+    profiles: ["monitoring"]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - hrconnect-network
+
   # phpLDAPadmin (interface web pour gérer LDAP)
   ldap-admin:
     image: osixia/phpldapadmin:0.9.0
     container_name: hrconnect-ldap-admin
+    profiles: ["monitoring"]
     environment:
       PHPLDAPADMIN_LDAP_HOSTS: ldap
       PHPLDAPADMIN_HTTPS: "false"
@@ -145,3 +159,4 @@ volumes:
 networks:
   hrconnect-network:
     driver: bridge
+
