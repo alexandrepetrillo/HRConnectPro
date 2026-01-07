@@ -62,7 +62,7 @@ employee-service/
 
 ```bash
 # Depuis la racine du projet
-docker-compose up -d
+docker compose up -d
 ```
 
 Cela démarre :
@@ -137,13 +137,41 @@ Chaque création ou modification d'employé publie un snapshot complet :
 }
 ```
 
+## Authentification
+
+L'API est sécurisée par JWT. Pour tester :
+
+```bash
+# 1. Obtenir un token
+curl -X POST http://localhost:8081/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "hr_user", "password": "password"}'
+
+# 2. Utiliser le token
+curl http://localhost:8081/api/employees \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Utilisateurs disponibles** : voir `IDENTIFIANTS.md` à la racine.
+
+## Pattern Outbox
+
+Le service utilise le pattern Transactional Outbox pour garantir la cohérence entre la base de données et Kafka :
+
+1. Chaque modification d'employé écrit dans la table `outbox_events`
+2. Un scheduler publie les événements sur Kafka toutes les 5 secondes
+3. Les événements sont marqués comme publiés après succès
+
+```sql
+-- Vérifier les événements en attente
+SELECT * FROM outbox_events WHERE published = false;
+```
+
 ## Tests
 
 ```bash
 mvn test
 ```
-
-Les tests utilisent Testcontainers pour Kafka et PostgreSQL.
 
 ## Configuration
 
@@ -151,12 +179,24 @@ Les propriétés principales sont dans `application.yml` :
 
 - Base de données : `spring.datasource.*`
 - Kafka : `spring.kafka.*`
+- JWT : `jwt.secret`, `jwt.expiration`
+- LDAP : `ldap.enabled`, `ldap.url`
 - Port : `server.port` (8081)
 
-## Prochaines étapes (TP)
+## Dépannage
 
-1. Configurer LDAP + JWT pour l'authentification
-2. Implémenter l'outbox pattern pour garantir la publication transactionnelle
-3. Ajouter des tests d'intégration avec Testcontainers
-4. Configurer le tracing distribué (Jaeger)
+### L'application ne démarre pas
+
+```bash
+# Vérifier que l'infrastructure est démarrée
+docker compose ps
+
+# Vérifier les logs PostgreSQL
+docker compose logs postgres-employee
+```
+
+### Erreur d'authentification
+
+- Vérifier que vous utilisez les bons identifiants (voir `IDENTIFIANTS.md`)
+- Vérifier que le token n'est pas expiré
 

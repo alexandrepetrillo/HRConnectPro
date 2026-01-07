@@ -1,0 +1,3 @@
+- Inutile de me générer systématiquement un fichier .md à chaque fois, seulement si je te le demande.
+- si tu veux utiliser docker-compose, il faut plutot utiliser la commande docker compose
+- si tu veux utiliser python, il faut utiliser la commande python3
