@@ -26,3 +26,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # OpenLDAP (pour l'authentification)
+  ldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: "HRConnect"
+      LDAP_DOMAIN: "hrconnect.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_TLS_VERIFY_CLIENT: "never"
+      LDAP_SEED_INTERNAL_LDIF_PATH: "/home/ldif"
+    ports:
+      - "389"  # Port dynamique
+      - "636"  # Port dynamique
+    volumes:
+      - ./scripts/ldap-bootstrap:/home/ldif
