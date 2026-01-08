@@ -1,0 +1,87 @@
+dn: ou=users,dc=hrconnect,dc=local
+objectClass: organizationalUnit
+ou: users
+description: Utilisateurs HRConnect
+
+dn: ou=groups,dc=hrconnect,dc=local
+objectClass: organizationalUnit
+ou: groups
+description: Groupes HRConnect
+
+# Chuck Norris - ADMIN : peut tout faire
+dn: uid=chuck,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: chuck
+cn: Chuck Norris
+sn: Norris
+givenName: Chuck
+mail: chuck.norris@hrconnect.local
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/chuck
+loginShell: /bin/bash
+employeeNumber: chuck
+title: Directeur Général
+departmentNumber: Direction
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+# Kevin Dupont - MANAGER : peut tout sauf supprimer
+dn: uid=kevin,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: kevin
+cn: Kevin Dupont
+sn: Dupont
+givenName: Kevin
+mail: kevin.dupont@hrconnect.local
+uidNumber: 10002
+gidNumber: 10002
+homeDirectory: /home/kevin
+loginShell: /bin/bash
+employeeNumber: kevin
+title: Manager IT
+departmentNumber: IT
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+# Sophie Martin - USER : ne peut voir que ses propres infos
+dn: uid=sophie,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: sophie
+cn: Sophie Martin
+sn: Martin
+givenName: Sophie
+mail: sophie.martin@hrconnect.local
+uidNumber: 10003
+gidNumber: 10003
+homeDirectory: /home/sophie
+loginShell: /bin/bash
+employeeNumber: sophie
+title: Développeuse Junior
+departmentNumber: IT
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
+
+# Groupe ADMIN
+dn: cn=ADMIN,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: ADMIN
+description: Administrateurs - Tous les droits
+member: uid=chuck,ou=users,dc=hrconnect,dc=local
+
+# Groupe MANAGER
+dn: cn=MANAGER,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: MANAGER
+description: Managers - Tout sauf suppression
+member: uid=kevin,ou=users,dc=hrconnect,dc=local
+
+# Groupe USER (rôle minimal)
+dn: cn=USER,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: USER
+description: Utilisateurs - Accès limité
+member: uid=sophie,ou=users,dc=hrconnect,dc=local

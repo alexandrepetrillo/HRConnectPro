@@ -12,11 +12,7 @@ import org.springframework.kafka.annotation.EnableKafka;
  * - Publication des snapshots Employee sur le topic employee.state
  */
 
-@SpringBootApplication(exclude = {
-  org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
-  org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class,
-  org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration.class
-})
+@SpringBootApplication
 public class EmployeeServiceApplication {
 
     public static void main(String[] args) {
