@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: leave-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hrconnect?currentSchema=leave
+    username: hrconnect
+    password: hrconnect
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  kafka:
+    bootstrap-servers: localhost:9092
+
+server:
+  port: 8082
+
+jwt:
+  secret: hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256
+
+kafka:
+  topics:
+    employee-state: employee.state
+    leave-state: leave.state
+

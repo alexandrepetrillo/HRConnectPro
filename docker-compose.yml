@@ -155,6 +155,7 @@ volumes:
   prometheus-data:
   grafana-data:
   ldap-data:
+  ldap-config:
 
 networks:
   hrconnect-network:

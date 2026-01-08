@@ -1,13 +1,13 @@
 # 🎯 HRConnectPro - État des lieux
 
-> **Dernière mise à jour** : 6 janvier 2026
+> **Dernière mise à jour** : 7 janvier 2026
 
 ## 📊 Progression globale
 
 | Jour | Statut | Description |
 |------|--------|-------------|
 | **Jour 1** | ✅ 100% | Fondation & Architecture Microservices |
-| **Jour 2** | ⏳ 0% | Événements, Communication & Sécurité |
+| **Jour 2** | 🔄 10% | Événements, Communication & Sécurité (en cours) |
 | **Jour 3** | ⏳ 0% | Observabilité, Résilience & Production |
 
 ---
@@ -32,12 +32,35 @@
 
 ---
 
-## ⏳ Jour 2 - À FAIRE
+## 🔄 Jour 2 - EN COURS
 
-| TP | Description |
-|----|-------------|
-| TP5 | Leave-Service (Consumer Kafka + projection Employee) |
-| TP6 | Interview-Service & Payroll-Service |
+| TP | Statut | Description |
+|----|--------|-------------|
+| TP5 | 🏗️ | Leave-Service (structure créée - coquille vide) |
+| TP6 | ⏳ | Interview-Service & Payroll-Service |
+
+### Leave-Service - Structure créée ✅
+
+**Architecture complète en place :**
+- ✅ Entités : `Leave`, `EmployeeSnapshot`, `LeaveType`, `LeaveStatus`
+- ✅ Repositories : `LeaveRepository`, `EmployeeSnapshotRepository`
+- ✅ Service : `LeaveService` (logique métier à implémenter)
+- ✅ Controller : `LeaveController` (API REST)
+- ✅ Consumer : `EmployeeEventConsumer` (à implémenter)
+- ✅ Publisher : `LeaveEventPublisher` (à implémenter)
+- ✅ Configuration : Security, OpenAPI, Kafka
+- ✅ Migrations DB : tables `leaves` et `employee_snapshots`
+- ✅ Dockerfile + README
+
+**TODO pour rendre le service fonctionnel :**
+- [ ] Implémenter la consommation des événements `employee.state`
+- [ ] Implémenter la désérialisation JSON des événements
+- [ ] Implémenter l'upsert dans `EmployeeSnapshot` avec idempotence
+- [ ] Implémenter la validation métier (employé existe, dates valides)
+- [ ] Calculer automatiquement le nombre de jours posés
+- [ ] Implémenter la publication des événements `leave.state`
+- [ ] Ajouter le pattern Outbox (optionnel)
+- [ ] Tester le flux end-to-end
 
 ---
 
@@ -62,7 +85,12 @@ HRConnectPro/
 │   ├── Pattern Outbox
 │   ├── Sécurité JWT
 │   └── OpenAPI/Swagger
-├── leave-service/        ⏳ À créer
+├── leave-service/        🏗️ Structure créée (coquille vide)
+│   ├── REST API CRUD (squelette)
+│   ├── Kafka Consumer (employee.state) - à implémenter
+│   ├── Kafka Producer (leave.state) - à implémenter
+│   ├── Projection EmployeeSnapshot
+│   └── OpenAPI/Swagger
 ├── interview-service/    ⏳ À créer
 ├── payroll-service/      ⏳ À créer
 └── reporting-service/    ⏳ À créer
@@ -95,8 +123,12 @@ HRConnectPro/
 cd employee-service
 mvn spring-boot:run
 
-# 3. Tester l'API
+# 3. Lancer Leave-Service (optionnel - coquille vide)
+./start-leave-service.sh
+
+# 4. Tester l'API
 curl http://localhost:8081/api/employees
+curl http://localhost:8082/api/leaves
 ```
 
 ### URLs utiles
@@ -104,7 +136,9 @@ curl http://localhost:8081/api/employees
 | Service | URL |
 |---------|-----|
 | Employee API | http://localhost:8081/api/employees |
-| Swagger UI | http://localhost:8081/swagger-ui.html |
+| Employee Swagger | http://localhost:8081/swagger-ui.html |
+| Leave API | http://localhost:8082/api/leaves |
+| Leave Swagger | http://localhost:8082/swagger-ui.html |
 | Kafka UI | http://localhost:8080 |
 | Grafana | http://localhost:3000 |
 | phpLDAPadmin | http://localhost:8082 |

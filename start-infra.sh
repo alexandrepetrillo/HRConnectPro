@@ -55,6 +55,22 @@ else
     echo "   ⚠️  Kafka n'est pas encore prêt, patientez quelques secondes..."
 fi
 
+# Vérifier LDAP
+echo ""
+echo "5️⃣  Vérification LDAP..."
+# Vérifier si le conteneur LDAP existe et est en cours d'exécution
+if $DOCKER_COMPOSE ps ldap | grep -q "Up"; then
+    # Tenter une connexion LDAP simple
+    timeout 5 bash -c "echo > /dev/tcp/localhost/389" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        echo "   ✅ LDAP est prêt"
+    else
+        echo "   ⚠️  LDAP n'est pas encore prêt, patientez quelques secondes..."
+    fi
+else
+    echo "   ⚠️  Le conteneur LDAP n'est pas démarré"
+fi
+
 echo ""
 echo "✅ Infrastructure démarrée!"
 echo ""
