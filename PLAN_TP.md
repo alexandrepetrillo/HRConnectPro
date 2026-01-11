@@ -76,13 +76,110 @@
 
 ---
 
-### 14h00 - 15h00 | 📊 **Théorie : Messaging & Kafka (1h)**
+### 14h00 - 14h45 | 🛠️ **TP1b : Communication REST synchrone & ses limites (45 min)** ⚠️ À IMPLÉMENTER
+
+> **Statut** : 🔴 Non implémenté - À faire avant de passer à Kafka
+
+**📺 Démonstration formateur (15 min) :**
+
+**Objectif pédagogique** : Montrer l'approche "classique" REST synchrone et ses problèmes avant d'introduire Kafka comme solution.
+
+**Scénario** : Leave-Service doit valider qu'un employé existe avant de créer un congé.
+
+```java
+// LeaveService.java - Version synchrone (problématique)
+@Service
+public class LeaveService {
+    
+    private final RestTemplate restTemplate;
+    
+    public Leave createLeave(LeaveRequest request) {
+        // ⚠️ Appel synchrone à Employee-Service
+        ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(
+            "http://localhost:8081/api/employees/" + request.getEmployeeId(),
+            EmployeeDTO.class
+        );
+        
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new EmployeeNotFoundException(request.getEmployeeId());
+        }
+        
+        // Créer le congé
+        return leaveRepository.save(mapToLeave(request));
+    }
+}
+```
+
+**🧑‍💻 TP guidé étudiant (20 min) :**
+- [ ] Créer une version simplifiée de `leave-service` avec `RestTemplate`
+- [ ] Implémenter l'appel REST vers Employee-Service
+- [ ] Tester le flux nominal (créer employé → créer congé)
+- [ ] Observer le comportement quand tout fonctionne
+
+**⚠️ Démonstration des problèmes (10 min) :**
+
+| Problème | Démonstration | Impact |
+|----------|---------------|--------|
+| **Couplage fort** | Leave-Service ne peut pas démarrer/fonctionner sans Employee-Service | Dépendance runtime |
+| **Timeout** | Arrêter Employee-Service → Leave bloque puis timeout | UX dégradée |
+| **Latence** | Chaque requête ajoute ~50-200ms de latence réseau | Performance |
+| **Cascade de pannes** | Employee down → Leave down → tous les dépendants down | Fragilité |
+| **Transaction distribuée** | Congé créé mais Employee tombe après validation | Incohérence données |
+| **Retry complexe** | Quelle politique ? Idempotence ? Timeout ? | Code complexe |
+| **Circuit Breaker nécessaire** | Sans CB, on continue d'appeler un service mort | Ressources gaspillées |
+
+**Script de démonstration :**
+```bash
+# 1. Démarrer les deux services
+cd employee/employee-service && mvn spring-boot:run &
+cd leave-service && mvn spring-boot:run &
+
+# 2. Créer un employé
+curl -X POST http://localhost:8081/api/employees \
+  -H "Content-Type: application/json" \
+  -d '{"nom":"Alice","email":"alice@test.com"}'
+
+# 3. Créer un congé → ✅ fonctionne
+curl -X POST http://localhost:8082/api/leaves \
+  -H "Content-Type: application/json" \
+  -d '{"employeeId":"EMP-xxx","type":"CP","dateDebut":"2026-02-01","dateFin":"2026-02-05"}'
+
+# 4. ARRÊTER Employee-Service
+pkill -f employee-service
+
+# 5. Créer un congé → ❌ ÉCHEC (timeout/500)
+curl -X POST http://localhost:8082/api/leaves ...
+# → Les étudiants voient concrètement le problème
+
+# 6. Redémarrer Employee-Service → Leave refonctionne
+# → Couplage fort démontré
+```
+
+**Questions à poser aux étudiants :**
+- "Comment faire pour que Leave-Service fonctionne même si Employee est down ?"
+- "Comment éviter les appels réseau à chaque création de congé ?"
+- "Comment garantir la cohérence si Employee tombe pendant la transaction ?"
+
+**Transition vers Kafka :**
+> "On a vu les limites du REST synchrone. Maintenant, voyons comment l'architecture event-driven avec Kafka résout ces problèmes..."
+
+---
+
+### 14h45 - 15h30 | 📊 **Théorie : Messaging & Kafka - La solution (45 min)**
 
 **Slides à présenter :**
+
+**Rappel des problèmes REST synchrone :**
+- Couplage fort, latence, cascade de pannes, transactions distribuées
+
+**Kafka comme solution :**
 - Introduction à Apache Kafka
   - Topics, partitions, offsets
   - Producers & Consumers
   - Garanties de livraison (at-most-once, at-least-once, exactly-once)
+- **Data locality** : chaque service stocke localement ce dont il a besoin
+  - Projection `EmployeeSnapshot` dans Leave-Service
+  - Autonomie totale : Leave fonctionne même si Employee est down
 - Spring Kafka
   - Configuration producer/consumer
   - KafkaTemplate, @KafkaListener
@@ -90,16 +187,25 @@
 - Modèle d'événements snapshot
   - Structure : eventId, timestamp, version, source, payload
   - Avantages pour les consommateurs downstream
-- Schémas d'événements (JSON Schema)
-  - Validation, versioning, compatibilité
 - Pattern Outbox (aperçu - détails J2)
   - Garantir cohérence transactionnelle DB + Kafka
 
-**Questions/échanges : 15 min**
+**Comparaison REST vs Event-Driven :**
+
+| Aspect | REST Synchrone | Event-Driven (Kafka) |
+|--------|----------------|----------------------|
+| Couplage | Fort (runtime) | Faible (design-time) |
+| Disponibilité | Dépend des autres | Autonome |
+| Latence | Ajoutée à chaque appel | Pas d'appel réseau |
+| Résilience | Cascade de pannes | Isolation des pannes |
+| Transactions | Distribuées (complexe) | Locales + Outbox |
+| Scalabilité | Limitée | Horizontale |
+
+**Questions/échanges : 10 min**
 
 ---
 
-### 15h00 - 16h30 | 🛠️ **TP2 : Publication d'événements Kafka (1h30)**
+### 15h30 - 16h30 | 🛠️ **TP2 : Publication d'événements Kafka (1h)**
 
 **📺 Démonstration formateur (20 min) :**
 - Création de `EmployeeStateEvent` (événement snapshot)
@@ -110,7 +216,7 @@
 - Intégration dans `EmployeeService` (après create/update)
 - Visualisation dans Kafka UI
 
-**🧑‍💻 TP guidé étudiant (1h10) :**
+**🧑‍💻 TP guidé étudiant (40 min) :**
 - [ ] Créer la classe `EmployeeStateEvent` avec tous les champs
   - eventId (UUID), timestamp, version, source, employee (snapshot)
 - [ ] Créer `EmployeeEventPublisher` avec `@Component`
@@ -335,32 +441,100 @@
 
 ---
 
-### 17h15 - 18h00 | 🛠️ **TP6 : Interview-Service & Payroll-Service (architecture) (45 min)**
+### 17h15 - 18h00 | 🛠️ **TP6 : Interview-Service & Payroll-Service (45 min)**
 
-**📺 Démonstration formateur (20 min) :**
-- Création rapide de `interview-service` (même pattern)
-  - Consomme `employee.state`
-  - Publie `interview.state` (avec augmentation accordée)
-- Création de `payroll-service`
-  - Consomme `employee.state`, `leave.state`, `interview.state`
-  - Calcul de la paie : salaire base + augmentation - retenues (jours absents)
-  - Publie `payroll.state`
+#### 📊 Discussion architecture (10 min) : Qui gère le salaire ?
 
-**🧑‍💻 TP guidé étudiant (25 min) :**
-- [ ] Créer `interview-service` (structure similaire, dépend de `employee-contract`)
-  - Entité `Interview` (id, employeeId, date, feedback, augmentation)
-  - Consumer employee.state
-  - Publisher interview.state
-- [ ] Créer `payroll-service`
-  - Projections locales : EmployeeSnapshot, LeaveSnapshot, InterviewSnapshot
-  - 3 consumers Kafka
-  - Service de calcul `PayrollCalculationService`
-  - Publication de `payroll.state`
-- [ ] Tester un flux complet end-to-end
+**Problématique à présenter aux étudiants :**
+> "Quand un entretien accorde une augmentation, comment l'intégrer dans le calcul de paie ?"
+
+**Option 1 : Interview impacte Employee**
+```
+Interview-Service → publie augmentation
+Employee-Service → consomme et met à jour le salaire
+Payroll-Service → consomme uniquement employee.state
+```
+- Employee devient la source de vérité unique pour le salaire
+- ⚠️ Employee devient aussi un consumer (complexité)
+
+**Option 2 : Payroll agrège tout** ← **CHOIX RETENU**
+```
+Employee-Service → publie salaire de base contractuel
+Interview-Service → publie augmentation accordée  
+Payroll-Service → consomme les 3 topics et calcule
+```
+- ✅ Illustre l'**agrégation multi-sources** (concept clé event-driven)
+- ✅ Chaque service reste simple (single responsibility)
+- ✅ Calcul métier centralisé dans Payroll
+- ✅ Pas d'appel REST → résilience totale
+
+**Transition :** "On va implémenter l'option 2. Interview-Service vous est fourni car il suit le même pattern que Leave-Service."
+
+---
+
+#### 📦 Interview-Service : FOURNI (5 min de présentation)
+
+> Ce service est fourni car il n'apporte pas de nouveaux concepts (même pattern : consumer + outbox + API REST).
+
+**Présentation rapide :**
+- Structure identique à Leave-Service
+- Consomme `employee.state` → projection `EmployeeSnapshot`
+- Publie `interview.state` avec l'augmentation accordée
+- API REST : CRUD entretiens
+
+**Événement `interview.state` :**
+```json
+{
+  "reference": "INT-2026-001",
+  "employeeId": "EMP-001",
+  "dateEntretien": "2026-01-15",
+  "augmentationAccordee": 2500.00,
+  "statut": "VALIDE"
+}
+```
+
+---
+
+#### 🛠️ Payroll-Service : À IMPLÉMENTER (30 min)
+
+**📺 Démonstration formateur (10 min) :**
+
+**Concept clé : Agrégation multi-sources**
+
+Payroll consomme **3 topics** et maintient **3 projections locales** :
+
+| Topic | Projection | Données |
+|-------|------------|---------|
+| `employee.state` | `EmployeeSnapshot` | Salaire de base |
+| `leave.state` | `LeaveSnapshot` | Jours d'absence |
+| `interview.state` | `InterviewSnapshot` | Augmentation |
+
+**Calcul de paie :**
+```java
+salaireNet = (salaireBase / 12) + (augmentation / 12) - retenues
+```
+
+**🧑‍💻 TP guidé étudiant (20 min) :**
+- [ ] Créer `payroll-service` (structure similaire)
+- [ ] Créer 3 projections : `EmployeeSnapshot`, `LeaveSnapshot`, `InterviewSnapshot`
+- [ ] Créer 3 consumers Kafka (un par topic)
+- [ ] Implémenter `PayrollCalculationService` avec le calcul métier
+- [ ] Créer l'API REST : `GET /api/payroll/{employeeId}?month=2026-01`
+- [ ] Tester le flux complet end-to-end
+
+**Test end-to-end :**
+```bash
+# 1. Créer un employé (salaire 48000€/an)
+# 2. Créer un entretien avec augmentation 2400€/an
+# 3. Créer un congé sans solde de 2 jours
+# 4. Appeler GET /api/payroll/EMP-001?month=2026-01
+# 5. Vérifier : (48000/12) + (2400/12) - (2j * tauxJournalier)
+```
 
 **Livrables attendus :**
-- 4 microservices communicant par événements
-- Flux métier complet : Employee → Leave/Interview → Payroll
+- Payroll-Service consomme 3 topics Kafka
+- Calcul de paie correct avec agrégation multi-sources
+- Aucun appel REST entre services → autonomie totale
 
 ---
 

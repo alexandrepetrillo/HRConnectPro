@@ -43,29 +43,168 @@ employee/                           # Module parent (pom)
 
 ---
 
+## 🔴 TODO PRIORITAIRE - TP1b : REST synchrone & ses limites
+
+> **Statut** : À implémenter avant de montrer Kafka
+
+### Objectif pédagogique
+
+Montrer les **problèmes de l'approche REST synchrone** pour justifier l'introduction de Kafka.
+
+### Scénario
+
+Leave-Service appelle Employee-Service en REST pour valider qu'un employé existe avant de créer un congé.
+
+### Implémentation à faire
+
+```java
+// LeaveService.java - Version synchrone (problématique)
+@Service
+@RequiredArgsConstructor
+public class LeaveServiceSync {
+    
+    private final RestTemplate restTemplate;
+    private final LeaveRepository leaveRepository;
+    
+    public Leave createLeave(LeaveRequest request) {
+        // ⚠️ Appel synchrone à Employee-Service
+        String url = "http://localhost:8081/api/employees/" + request.getEmployeeId();
+        
+        try {
+            ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(
+                url, EmployeeDTO.class
+            );
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new EmployeeNotFoundException(request.getEmployeeId());
+            }
+        } catch (RestClientException e) {
+            // ⚠️ Que faire ici ? Retry ? Timeout ? Circuit Breaker ?
+            throw new ServiceUnavailableException("Employee-Service indisponible", e);
+        }
+        
+        // Créer le congé
+        return leaveRepository.save(mapToLeave(request));
+    }
+}
+```
+
+### Problèmes à démontrer
+
+| Problème | Démonstration | Impact métier |
+|----------|---------------|---------------|
+| **Couplage fort** | Leave ne démarre pas si Employee est down | Déploiement couplé |
+| **Timeout** | Arrêter Employee → Leave bloque 30s | UX dégradée |
+| **Latence cumulée** | +50-200ms par appel réseau | Performance |
+| **Cascade de pannes** | Employee down → Leave down → tout down | Fragilité système |
+| **Transaction distribuée** | Congé créé, puis Employee tombe | Incohérence données |
+| **Retry complexe** | Combien de fois ? Délai ? Idempotence ? | Code spaghetti |
+| **Circuit Breaker** | Sans CB, on bombarde un service mort | Ressources gaspillées |
+| **Scalabilité** | Chaque requête = appel réseau | Goulet d'étranglement |
+
+### Script de démonstration
+
+```bash
+# 1. Démarrer les deux services
+cd employee/employee-service && mvn spring-boot:run &
+cd leave-service && mvn spring-boot:run &
+
+# 2. Créer un employé
+curl -X POST http://localhost:8081/api/employees \
+  -H "Content-Type: application/json" \
+  -d '{"nom":"Alice","email":"alice@test.com","role":"DEVELOPER"}'
+# → Récupérer la référence EMP-xxx
+
+# 3. Créer un congé → ✅ Fonctionne
+curl -X POST http://localhost:8082/api/leaves \
+  -H "Content-Type: application/json" \
+  -d '{"employeeId":"EMP-xxx","type":"CP","dateDebut":"2026-02-01","dateFin":"2026-02-05"}'
+
+# 4. ARRÊTER Employee-Service
+pkill -f employee-service
+
+# 5. Créer un congé → ❌ TIMEOUT puis ERREUR 503
+curl -X POST http://localhost:8082/api/leaves ...
+# → Attente longue puis échec
+# → Les étudiants voient le problème concrètement
+
+# 6. Montrer les logs Leave-Service
+# → ConnectException, timeout, retry failed...
+
+# 7. Redémarrer Employee-Service
+cd employee/employee-service && mvn spring-boot:run &
+
+# 8. Recréer un congé → ✅ Refonctionne
+# → Couplage fort démontré
+```
+
+### Questions à poser aux étudiants
+
+1. "Comment Leave peut-il fonctionner même si Employee est down ?"
+2. "Comment éviter un appel réseau à chaque création de congé ?"
+3. "Comment garantir la cohérence si Employee tombe pendant la transaction ?"
+4. "Quelle est la solution pour découpler ces services ?"
+
+### Transition vers Kafka
+
+> "On a vu les limites du REST synchrone. L'architecture event-driven avec Kafka résout ces problèmes en permettant à chaque service de stocker localement les données dont il a besoin (projection/snapshot)."
+
+---
+
 ## 📝 TODO - Prochaines étapes
 
 ### TP6 : Interview-Service & Payroll-Service
 
-#### 1. Interview-Service
+#### 🎓 Choix d'architecture : qui gère le salaire ?
 
-**Structure à créer :**
+**Problématique** : Quand un entretien accorde une augmentation, comment l'intégrer dans le calcul de paie ?
+
+**Option 1 : Interview impacte Employee**
+```
+Employee-Service → détient le salaire actuel
+Interview-Service → publie l'augmentation accordée
+Employee-Service → consomme interview.state et met à jour le salaire
+Payroll-Service → consomme uniquement employee.state (salaire déjà à jour)
+```
+- ✅ Employee est la source de vérité pour le salaire
+- ✅ Payroll reste simple
+- ⚠️ Employee devient aussi un consumer (complexité)
+
+**Option 2 : Payroll agrège tout** ← **CHOIX RETENU**
+```
+Employee-Service → publie le salaire de base contractuel
+Interview-Service → publie l'augmentation accordée
+Payroll-Service → consomme employee + interview + leave et calcule
+```
+- ✅ Illustre l'**agrégation multi-sources** (concept clé event-driven)
+- ✅ Chaque service reste simple (single responsibility)
+- ✅ Le calcul métier complexe est centralisé dans Payroll
+- ✅ Le salaire dans Employee reste le salaire de base contractuel
+
+**Pourquoi ce choix pour le TP ?**
+- Démontre la puissance de l'architecture event-driven
+- Payroll combine 3 sources de données de manière autonome
+- Pas d'appel REST entre services → résilience totale
+- Calcul `salaire_base + augmentation - retenues` très pédagogique
+
+---
+
+#### 1. Interview-Service 📦 FOURNI
+
+> **Note** : Ce service sera **fourni directement** car il n'apporte pas de nouveaux concepts par rapport à Leave-Service (même pattern : consumer + outbox + API REST).
+
+**Structure fournie :**
 ```
 interview-service/
 ├── pom.xml (dépend de employee-contract)
 ├── src/main/java/.../interview/
-│   ├── domain/
-│   │   ├── model/Interview.java
-│   │   └── repository/InterviewRepository.java
-│   ├── application/
-│   │   └── service/InterviewService.java
-│   ├── infrastructure/
-│   │   ├── event/EmployeeEventConsumer.java
-│   │   └── outbox/InterviewOutboxService.java
-│   └── presentation/
-│       └── controller/InterviewController.java
-└── src/main/resources/
-    └── application.yml
+│   ├── domain/model/Interview.java
+│   ├── domain/repository/InterviewRepository.java
+│   ├── application/service/InterviewService.java
+│   ├── infrastructure/event/EmployeeEventConsumer.java
+│   ├── infrastructure/outbox/InterviewOutboxService.java
+│   └── presentation/controller/InterviewController.java
+└── src/main/resources/application.yml
 ```
 
 **Entité Interview :**
@@ -73,38 +212,125 @@ interview-service/
 @Entity
 public class Interview {
     private Long id;
-    private String employeeId;
-    private LocalDate date;
+    private String employeeId;           // Référence employé
+    private LocalDate dateEntretien;
     private String feedback;
-    private Double augmentationAccordee;  // % ou montant
-    private InterviewStatus statut;
+    private Double augmentationAccordee; // Montant annuel accordé
+    private InterviewStatus statut;      // PLANIFIE, REALISE, VALIDE
 }
 ```
 
-**Topics Kafka :**
-- Consomme : `employee.state`
-- Publie : `interview.state`
-
-#### 2. Payroll-Service
-
-**Consomme 3 topics :**
-- `employee.state` → salaire de base
-- `leave.state` → jours d'absence
-- `interview.state` → augmentations accordées
-
-**Calcul de paie :**
-```java
-public BigDecimal calculateMonthlyPay(String employeeId, YearMonth month) {
-    EmployeeSnapshot employee = getEmployee(employeeId);
-    List<Leave> leaves = getLeavesForMonth(employeeId, month);
-    Interview interview = getLastInterview(employeeId);
-    
-    BigDecimal baseMensuel = employee.getSalaireAnnuelBase() / 12;
-    BigDecimal augmentation = calculateAugmentation(interview);
-    BigDecimal retenues = calculateRetenues(leaves, baseMensuel);
-    
-    return baseMensuel.add(augmentation).subtract(retenues);
+**Événement publié sur `interview.state` :**
+```json
+{
+  "reference": "INT-2026-001",
+  "employeeId": "EMP-001",
+  "dateEntretien": "2026-01-15",
+  "augmentationAccordee": 2500.00,
+  "statut": "VALIDE"
 }
+```
+
+---
+
+#### 2. Payroll-Service 🛠️ À IMPLÉMENTER
+
+**Concept clé : Agrégation multi-sources**
+
+Payroll consomme **3 topics Kafka** et maintient **3 projections locales** :
+
+| Topic | Projection locale | Données utilisées |
+|-------|-------------------|-------------------|
+| `employee.state` | `EmployeeSnapshot` | Salaire de base annuel |
+| `leave.state` | `LeaveSnapshot` | Jours d'absence par mois |
+| `interview.state` | `InterviewSnapshot` | Augmentation accordée |
+
+**Structure à créer :**
+```
+payroll-service/
+├── pom.xml
+├── src/main/java/.../payroll/
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── Payslip.java              # Fiche de paie générée
+│   │   │   ├── EmployeeSnapshot.java     # Projection employee
+│   │   │   ├── LeaveSnapshot.java        # Projection leave
+│   │   │   └── InterviewSnapshot.java    # Projection interview
+│   │   └── repository/
+│   │       └── ...Repository.java
+│   ├── application/
+│   │   └── service/PayrollCalculationService.java
+│   ├── infrastructure/
+│   │   └── event/
+│   │       ├── EmployeeEventConsumer.java
+│   │       ├── LeaveEventConsumer.java
+│   │       └── InterviewEventConsumer.java
+│   └── presentation/
+│       └── controller/PayrollController.java
+└── src/main/resources/application.yml
+```
+
+**Calcul de paie (logique métier) :**
+```java
+@Service
+@RequiredArgsConstructor
+public class PayrollCalculationService {
+
+    private final EmployeeSnapshotRepository employeeRepo;
+    private final LeaveSnapshotRepository leaveRepo;
+    private final InterviewSnapshotRepository interviewRepo;
+
+    public Payslip calculateMonthlyPay(String employeeId, YearMonth month) {
+        // 1. Récupérer les données locales (pas d'appel REST !)
+        EmployeeSnapshot employee = employeeRepo.findByEmployeeId(employeeId)
+            .orElseThrow(() -> new EmployeeNotFoundException(employeeId));
+        
+        List<LeaveSnapshot> leaves = leaveRepo.findByEmployeeIdAndMonth(employeeId, month);
+        
+        Optional<InterviewSnapshot> lastInterview = interviewRepo
+            .findTopByEmployeeIdOrderByDateDesc(employeeId);
+
+        // 2. Calcul du salaire mensuel de base
+        BigDecimal salaireBaseMensuel = employee.getSalaireAnnuelBase()
+            .divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+
+        // 3. Ajouter l'augmentation (si entretien validé)
+        BigDecimal augmentationMensuelle = lastInterview
+            .filter(i -> i.getStatut() == InterviewStatus.VALIDE)
+            .map(i -> i.getAugmentationAccordee().divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP))
+            .orElse(BigDecimal.ZERO);
+
+        // 4. Calculer les retenues (jours d'absence non payés)
+        int joursAbsence = leaves.stream()
+            .filter(l -> l.getType() == LeaveType.SANS_SOLDE)
+            .mapToInt(LeaveSnapshot::getJoursPoses)
+            .sum();
+        
+        BigDecimal tauxJournalier = salaireBaseMensuel.divide(BigDecimal.valueOf(22), 2, RoundingMode.HALF_UP);
+        BigDecimal retenues = tauxJournalier.multiply(BigDecimal.valueOf(joursAbsence));
+
+        // 5. Salaire net
+        BigDecimal salaireNet = salaireBaseMensuel
+            .add(augmentationMensuelle)
+            .subtract(retenues);
+
+        return Payslip.builder()
+            .employeeId(employeeId)
+            .mois(month)
+            .salaireBase(salaireBaseMensuel)
+            .augmentation(augmentationMensuelle)
+            .retenues(retenues)
+            .salaireNet(salaireNet)
+            .build();
+    }
+}
+```
+
+**API REST :**
+```
+GET  /api/payroll/{employeeId}?month=2026-01  → Fiche de paie du mois
+GET  /api/payroll/{employeeId}/history        → Historique des fiches
+POST /api/payroll/generate?month=2026-01      → Générer toutes les fiches du mois
 ```
 
 ---
@@ -195,6 +421,7 @@ curl -X POST http://localhost:8082/api/leaves \
 | TP | Objectif | Statut |
 |----|----------|--------|
 | TP1 | CRUD REST + PostgreSQL | ✅ |
+| TP1b | REST synchrone & ses limites | 🔴 À implémenter |
 | TP2 | Publication Kafka (snapshot) | ✅ |
 | TP3 | Pattern Outbox | ✅ |
 | TP4 | Sécurité LDAP + JWT | ✅ |

@@ -17,6 +17,7 @@
 | TP | Statut | Description |
 |----|--------|-------------|
 | TP1 | ✅ | Employee-Service avec CRUD REST + PostgreSQL |
+| TP1b | 🔴 | Communication REST synchrone & ses limites (à implémenter) |
 | TP2 | ✅ | Publication événements Kafka (snapshot pattern) |
 | TP3 | ✅ | Pattern Transactional Outbox |
 | TP4 | ✅ | Authentification LDAP + JWT |
@@ -30,6 +31,19 @@
 - **Observabilité** : Actuator + métriques Prometheus
 - **Documentation** : Swagger UI
 
+### ⚠️ À implémenter : TP1b - REST synchrone
+
+**Objectif pédagogique** : Montrer les problèmes de l'approche REST synchrone avant Kafka.
+
+| Problème | Description |
+|----------|-------------|
+| Couplage fort | Leave-Service dépend de Employee-Service au runtime |
+| Timeout | Si Employee est lent/down, Leave bloque |
+| Latence | +50-200ms par appel réseau |
+| Cascade de pannes | Un service down → tous les dépendants down |
+| Transaction distribuée | Incohérence si panne pendant la transaction |
+| Circuit Breaker | Nécessaire mais ajoute de la complexité |
+
 ---
 
 ## 🔄 Jour 2 - EN COURS
@@ -38,7 +52,7 @@
 |----|--------|-------------|
 | TP5 | ✅ | Leave-Service avec consommation employee.state |
 | TP5b | ✅ | Refactoring multi-module Maven (employee-contract) |
-| TP6 | ⏳ | Interview-Service & Payroll-Service |
+| TP6 | ⏳ | Interview-Service (fourni) & Payroll-Service (à implémenter) |
 
 ### Leave-Service - Opérationnel ✅
 
@@ -74,6 +88,23 @@ employee/                           # Module parent (pom)
 - `leave-service` dépend de `employee-contract` (pas de duplication de DTO)
 - Couplage faible entre microservices
 - Contrats partagés sans exposer l'implémentation
+
+### TP6 : Choix d'architecture - Qui gère le salaire ?
+
+**Problématique** : Quand un entretien accorde une augmentation, comment l'intégrer ?
+
+| Option | Description | Choix |
+|--------|-------------|-------|
+| Option 1 | Interview → Employee met à jour le salaire → Payroll consomme Employee | ❌ |
+| **Option 2** | **Payroll agrège employee + leave + interview** | ✅ **Retenu** |
+
+**Pourquoi Option 2 ?**
+- Illustre l'**agrégation multi-sources** (concept clé event-driven)
+- Chaque service reste simple (single responsibility)
+- Pas d'appel REST entre services → résilience totale
+
+**Interview-Service** : 📦 Fourni (même pattern que Leave, pas de nouveau concept)
+**Payroll-Service** : 🛠️ À implémenter (agrégation 3 topics Kafka)
 
 ---
 
