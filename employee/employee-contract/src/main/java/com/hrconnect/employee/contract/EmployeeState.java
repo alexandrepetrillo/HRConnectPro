@@ -1,4 +1,4 @@
-package com.hrconnect.leave.infrastructure.event;
+package com.hrconnect.employee.contract;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Événement snapshot Employee reçu depuis Kafka (topic: employee.state)
+ * Événement snapshot Employee publié sur Kafka (topic: employee.state)
  */
 @Data
 @Builder
@@ -34,3 +34,4 @@ public class EmployeeState {
         private String fin;
     }
 }
+

@@ -303,9 +303,41 @@
 
 ---
 
-### 16h45 - 18h00 | 🛠️ **TP6 : Interview-Service & Payroll-Service (architecture) (1h15)**
+### 16h45 - 17h15 | 🛠️ **TP5b : Refactoring Multi-module Maven (30 min)**
 
-**📺 Démonstration formateur (30 min) :**
+**📺 Démonstration formateur (10 min) :**
+- Problématique : duplication du DTO `EmployeeState` entre services
+- Solution : module Maven partagé `employee-contract`
+- Structure multi-module :
+  ```
+  employee/                     # Module parent (pom)
+  ├── pom.xml
+  ├── employee-contract/        # DTOs partagés
+  │   └── EmployeeState.java
+  └── employee-service/         # Service complet
+  ```
+- Avantages : couplage faible, contrats explicites
+
+**🧑‍💻 TP guidé étudiant (20 min) :**
+- [ ] Créer le dossier `employee/` comme module parent
+- [ ] Déplacer `employee-service/` sous `employee/` avec `git mv`
+- [ ] Créer `employee-contract/` avec `EmployeeState.java`
+- [ ] Configurer les POMs (parent, contract, service)
+- [ ] Ajouter la dépendance `employee-contract` dans `leave-service`
+- [ ] Supprimer la classe `EmployeeState` dupliquée dans `leave-service`
+- [ ] Mettre à jour les imports
+- [ ] Compiler et tester
+
+**Livrables attendus :**
+- Structure multi-module fonctionnelle
+- `leave-service` dépend de `employee-contract`
+- Pas de duplication de code
+
+---
+
+### 17h15 - 18h00 | 🛠️ **TP6 : Interview-Service & Payroll-Service (architecture) (45 min)**
+
+**📺 Démonstration formateur (20 min) :**
 - Création rapide de `interview-service` (même pattern)
   - Consomme `employee.state`
   - Publie `interview.state` (avec augmentation accordée)
@@ -314,8 +346,8 @@
   - Calcul de la paie : salaire base + augmentation - retenues (jours absents)
   - Publie `payroll.state`
 
-**🧑‍💻 TP guidé étudiant (45 min) :**
-- [ ] Créer `interview-service` (structure similaire)
+**🧑‍💻 TP guidé étudiant (25 min) :**
+- [ ] Créer `interview-service` (structure similaire, dépend de `employee-contract`)
   - Entité `Interview` (id, employeeId, date, feedback, augmentation)
   - Consumer employee.state
   - Publisher interview.state

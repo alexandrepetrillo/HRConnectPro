@@ -1,189 +1,205 @@
-# 🚀 Prochaines étapes - Leave Service
+# 🚀 Prochaines étapes - HRConnectPro
+
+> **Dernière mise à jour** : 11 janvier 2026
 
 ## ✅ Ce qui est fait
 
-Le **Leave-Service** est créé en mode **coquille vide** avec :
+### TP5 : Leave-Service ✅
+
+Le **Leave-Service** est **opérationnel** avec :
 - ✅ Structure complète du projet
-- ✅ Configuration Maven (pom.xml)
+- ✅ Configuration Maven avec dépendance `employee-contract`
 - ✅ Configuration Spring Boot (application.yml)
 - ✅ Entités JPA : `Leave`, `EmployeeSnapshot`
 - ✅ Repositories
-- ✅ Service métier (squelette)
-- ✅ Controller REST (squelette)
-- ✅ Consumer Kafka (squelette)
-- ✅ Publisher Kafka (squelette)
+- ✅ Service métier complet
+- ✅ Controller REST
+- ✅ Consumer Kafka (`EmployeeEventConsumer`) - consomme `employee.state`
+- ✅ Pattern Outbox pour publication `leave.state`
 - ✅ Migrations Flyway
 - ✅ Configuration Security & OpenAPI
 - ✅ Dockerfile & README
 
-## 📝 TODO pour le rendre fonctionnel
+### TP5b : Multi-module Maven ✅
 
-### 1. Implémenter le Consumer Kafka (`EmployeeEventConsumer`)
+Refactoring de `employee-service` en structure multi-module :
 
-**Fichier :** `infrastructure/event/EmployeeEventConsumer.java`
+```
+employee/                           # Module parent (pom)
+├── pom.xml                         
+├── employee-contract/              # Contrats partagés
+│   ├── pom.xml
+│   └── src/main/java/.../contract/
+│       └── EmployeeState.java      # DTO partagé
+└── employee-service/               # Service complet
+    ├── pom.xml
+    └── src/...
+```
 
-**À faire :**
+**Avantages :**
+- `leave-service` dépend de `employee-contract` → pas de duplication
+- Couplage faible entre microservices
+- Contrats partagés sans exposer l'implémentation
+
+---
+
+## 📝 TODO - Prochaines étapes
+
+### TP6 : Interview-Service & Payroll-Service
+
+#### 1. Interview-Service
+
+**Structure à créer :**
+```
+interview-service/
+├── pom.xml (dépend de employee-contract)
+├── src/main/java/.../interview/
+│   ├── domain/
+│   │   ├── model/Interview.java
+│   │   └── repository/InterviewRepository.java
+│   ├── application/
+│   │   └── service/InterviewService.java
+│   ├── infrastructure/
+│   │   ├── event/EmployeeEventConsumer.java
+│   │   └── outbox/InterviewOutboxService.java
+│   └── presentation/
+│       └── controller/InterviewController.java
+└── src/main/resources/
+    └── application.yml
+```
+
+**Entité Interview :**
 ```java
-@KafkaListener(topics = "employee.state", groupId = "leave-service")
-public void consumeEmployeeStateEvent(String message) {
-    // 1. Désérialiser l'événement JSON
-    // 2. Vérifier l'idempotence avec eventId
-    // 3. Faire un upsert dans EmployeeSnapshot
-    // 4. Gérer les erreurs
+@Entity
+public class Interview {
+    private Long id;
+    private String employeeId;
+    private LocalDate date;
+    private String feedback;
+    private Double augmentationAccordee;  // % ou montant
+    private InterviewStatus statut;
 }
 ```
 
-**Créer la classe d'événement :**
-```java
-@Data
-public class EmployeeStateEvent {
-    private String eventId;
-    private LocalDateTime timestamp;
-    private Integer version;
-    private String source;
-    private EmployeeData employee;
-}
+**Topics Kafka :**
+- Consomme : `employee.state`
+- Publie : `interview.state`
 
-@Data
-public class EmployeeData {
-    private String id;
-    private String nom;
-    private String email;
-    private String role;
-    private String departement;
-    private String managerId;
-    private Double salaireAnnuelBase;
+#### 2. Payroll-Service
+
+**Consomme 3 topics :**
+- `employee.state` → salaire de base
+- `leave.state` → jours d'absence
+- `interview.state` → augmentations accordées
+
+**Calcul de paie :**
+```java
+public BigDecimal calculateMonthlyPay(String employeeId, YearMonth month) {
+    EmployeeSnapshot employee = getEmployee(employeeId);
+    List<Leave> leaves = getLeavesForMonth(employeeId, month);
+    Interview interview = getLastInterview(employeeId);
+    
+    BigDecimal baseMensuel = employee.getSalaireAnnuelBase() / 12;
+    BigDecimal augmentation = calculateAugmentation(interview);
+    BigDecimal retenues = calculateRetenues(leaves, baseMensuel);
+    
+    return baseMensuel.add(augmentation).subtract(retenues);
 }
 ```
 
-### 2. Implémenter la logique métier (`LeaveService`)
+---
 
-**À compléter dans le service :**
+### TP7 : Observabilité
 
-```java
-@Transactional
-public Leave createLeave(Leave leave) {
-    // 1. Vérifier que l'employé existe dans EmployeeSnapshot
-    if (!employeeSnapshotRepository.existsByEmployeeId(leave.getEmployeeId())) {
-        throw new RuntimeException("Employee not found: " + leave.getEmployeeId());
-    }
-    
-    // 2. Valider les dates
-    if (leave.getDateDebut().isAfter(leave.getDateFin())) {
-        throw new RuntimeException("Date de début doit être avant date de fin");
-    }
-    
-    // 3. Calculer le nombre de jours posés
-    long joursPoses = ChronoUnit.DAYS.between(leave.getDateDebut(), leave.getDateFin()) + 1;
-    leave.setJoursPoses((int) joursPoses);
-    
-    // 4. Définir le statut par défaut
-    leave.setStatut(LeaveStatus.EN_ATTENTE);
-    
-    // 5. Sauvegarder
-    Leave savedLeave = leaveRepository.save(leave);
-    
-    // 6. Publier l'événement leave.state
-    leaveEventPublisher.publishLeaveState(savedLeave);
-    
-    return savedLeave;
-}
-```
+- [ ] Dashboards Grafana pour les 4 microservices
+- [ ] Tracing distribué avec Jaeger
+- [ ] Logs structurés JSON
+- [ ] Métriques custom Kafka (lag consumer, etc.)
 
-### 3. Implémenter le Publisher Kafka (`LeaveEventPublisher`)
+### TP8 : Résilience
 
-**À compléter :**
+- [ ] Resilience4j (Circuit Breaker, Retry, Rate Limiter)
+- [ ] Dead Letter Queue (DLQ) Kafka
+- [ ] Gestion des erreurs de consommation
 
-```java
-public void publishLeaveState(Leave leave) {
-    LeaveStateEvent event = LeaveStateEvent.builder()
-        .eventId(UUID.randomUUID().toString())
-        .timestamp(LocalDateTime.now())
-        .version(1)
-        .source("leave-service")
-        .leave(LeaveData.builder()
-            .id(leave.getId().toString())
-            .employeeId(leave.getEmployeeId())
-            .type(leave.getType().toString())
-            .dateDebut(leave.getDateDebut())
-            .dateFin(leave.getDateFin())
-            .statut(leave.getStatut().toString())
-            .joursPoses(leave.getJoursPoses())
-            .build())
-        .build();
-    
-    kafkaTemplate.send(leaveStateTopic, leave.getEmployeeId(), event);
-    log.info("Published leave.state event: {}", event.getEventId());
-}
-```
+---
 
-### 4. Créer les DTOs pour les événements
-
-**Créer :** `infrastructure/event/dto/`
-
-- `EmployeeStateEvent.java`
-- `EmployeeData.java`
-- `LeaveStateEvent.java`
-- `LeaveData.java`
-
-### 5. Tester le flux complet
+## 🧪 Tester le flux actuel
 
 ```bash
 # 1. Démarrer l'infra
 ./start-infra.sh
 
-# 2. Démarrer Employee-Service
-cd employee-service && mvn spring-boot:run &
+# 2. Compiler les modules
+mvn clean install -DskipTests
 
-# 3. Démarrer Leave-Service
+# 3. Démarrer Employee-Service
+cd employee/employee-service && mvn spring-boot:run &
+
+# 4. Démarrer Leave-Service
 cd leave-service && mvn spring-boot:run &
 
-# 4. Créer un employé
+# 5. Obtenir un token JWT
+TOKEN=$(curl -s -X POST http://localhost:8081/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}' | jq -r '.token')
+
+# 6. Créer un employé
 curl -X POST http://localhost:8081/api/employees \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "id": "E001",
     "nom": "Alice Dupont",
     "email": "alice@company.com",
+    "role": "DEVELOPER",
+    "departement": "IT",
     "salaireAnnuelBase": 48000
   }'
 
-# 5. Vérifier dans Kafka UI que employee.state est publié
-# http://localhost:8080
+# 7. Vérifier dans Kafka UI (http://localhost:8080)
+#    → Topic employee.state contient l'événement
 
-# 6. Attendre que Leave-Service consomme l'événement
+# 8. Vérifier que Leave-Service a consommé l'événement
+#    → Table employee_snapshots contient Alice
 
-# 7. Créer un congé
+# 9. Créer un congé
 curl -X POST http://localhost:8082/api/leaves \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "employeeId": "E001",
+    "employeeId": "EMP-xxx",
     "type": "CP",
     "dateDebut": "2026-02-01",
-    "dateFin": "2026-02-05",
-    "joursTravaillesMois": 20,
-    "joursPosesMois": 5
+    "dateFin": "2026-02-05"
   }'
 
-# 8. Vérifier dans Kafka UI que leave.state est publié
+# 10. Vérifier dans Kafka UI
+#     → Topic leave.state contient l'événement
 ```
-
-## 📚 Ressources
-
-- [Plan TP complet](PLAN_TP.md)
-- [Documentation Employee-Service](employee-service/README.md)
-- [Documentation Leave-Service](leave-service/README.md)
-
-## 🎯 Objectif du TP5
-
-**Démontrer :**
-1. ✅ Consommation d'événements Kafka
-2. ✅ Projection locale (EmployeeSnapshot)
-3. ✅ Idempotence avec eventId
-4. ✅ Publication d'événements snapshot
-5. ✅ Communication asynchrone entre microservices
 
 ---
 
-**Note :** Une fois le TP5 terminé, tu pourras passer au TP6 (Interview-Service & Payroll-Service) !
+## 📚 Ressources
 
+| Fichier | Description |
+|---------|-------------|
+| [PLAN_TP.md](PLAN_TP.md) | Planning formation 3 jours détaillé |
+| [RESUME.md](RESUME.md) | État des lieux actuel |
+| [employee/README.md](employee/employee-service/README.md) | Documentation Employee-Service |
+| [leave-service/README.md](leave-service/README.md) | Documentation Leave-Service |
+
+---
+
+## 🎯 Objectifs accomplis
+
+| TP | Objectif | Statut |
+|----|----------|--------|
+| TP1 | CRUD REST + PostgreSQL | ✅ |
+| TP2 | Publication Kafka (snapshot) | ✅ |
+| TP3 | Pattern Outbox | ✅ |
+| TP4 | Sécurité LDAP + JWT | ✅ |
+| TP5 | Leave-Service + consommation Kafka | ✅ |
+| TP5b | Multi-module Maven | ✅ |
+| TP6 | Interview & Payroll Services | ⏳ |
+| TP7 | Observabilité | ⏳ |
+| TP8 | Résilience | ⏳ |

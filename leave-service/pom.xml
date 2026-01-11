@@ -19,6 +19,13 @@
     <description>Microservice de gestion des congés</description>
 
     <dependencies>
+        <!-- Employee Contract (DTOs partagés) -->
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>employee-contract</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

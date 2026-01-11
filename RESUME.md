@@ -1,13 +1,13 @@
 # 🎯 HRConnectPro - État des lieux
 
-> **Dernière mise à jour** : 7 janvier 2026
+> **Dernière mise à jour** : 11 janvier 2026
 
 ## 📊 Progression globale
 
 | Jour | Statut | Description |
 |------|--------|-------------|
 | **Jour 1** | ✅ 100% | Fondation & Architecture Microservices |
-| **Jour 2** | 🔄 10% | Événements, Communication & Sécurité (en cours) |
+| **Jour 2** | 🔄 60% | Événements, Communication & Sécurité (en cours) |
 | **Jour 3** | ⏳ 0% | Observabilité, Résilience & Production |
 
 ---
@@ -36,31 +36,44 @@
 
 | TP | Statut | Description |
 |----|--------|-------------|
-| TP5 | 🏗️ | Leave-Service (structure créée - coquille vide) |
+| TP5 | ✅ | Leave-Service avec consommation employee.state |
+| TP5b | ✅ | Refactoring multi-module Maven (employee-contract) |
 | TP6 | ⏳ | Interview-Service & Payroll-Service |
 
-### Leave-Service - Structure créée ✅
+### Leave-Service - Opérationnel ✅
 
-**Architecture complète en place :**
+**Fonctionnalités implémentées :**
 - ✅ Entités : `Leave`, `EmployeeSnapshot`, `LeaveType`, `LeaveStatus`
 - ✅ Repositories : `LeaveRepository`, `EmployeeSnapshotRepository`
-- ✅ Service : `LeaveService` (logique métier à implémenter)
+- ✅ Service : `LeaveService` (logique métier)
 - ✅ Controller : `LeaveController` (API REST)
-- ✅ Consumer : `EmployeeEventConsumer` (à implémenter)
-- ✅ Publisher : `LeaveEventPublisher` (à implémenter)
+- ✅ Consumer Kafka : `EmployeeEventConsumer` (consomme `employee.state`)
+- ✅ Pattern Outbox pour publication `leave.state`
 - ✅ Configuration : Security, OpenAPI, Kafka
-- ✅ Migrations DB : tables `leaves` et `employee_snapshots`
+- ✅ Migrations DB : tables `leaves`, `employee_snapshots`, `leave_outbox`
 - ✅ Dockerfile + README
 
-**TODO pour rendre le service fonctionnel :**
-- [ ] Implémenter la consommation des événements `employee.state`
-- [ ] Implémenter la désérialisation JSON des événements
-- [ ] Implémenter l'upsert dans `EmployeeSnapshot` avec idempotence
-- [ ] Implémenter la validation métier (employé existe, dates valides)
-- [ ] Calculer automatiquement le nombre de jours posés
-- [ ] Implémenter la publication des événements `leave.state`
-- [ ] Ajouter le pattern Outbox (optionnel)
-- [ ] Tester le flux end-to-end
+### Multi-module Maven - Implémenté ✅
+
+**Refactoring de `employee-service` en structure multi-module :**
+
+```
+employee/                           # Module parent (pom)
+├── pom.xml                         
+├── employee-contract/              # Contrats partagés (DTOs, Events)
+│   ├── pom.xml
+│   └── src/main/java/.../contract/
+│       └── EmployeeState.java      # DTO partagé entre services
+└── employee-service/               # Service complet
+    ├── pom.xml
+    ├── Dockerfile
+    └── src/...
+```
+
+**Avantages :**
+- `leave-service` dépend de `employee-contract` (pas de duplication de DTO)
+- Couplage faible entre microservices
+- Contrats partagés sans exposer l'implémentation
 
 ---
 
@@ -79,21 +92,24 @@
 
 ```
 HRConnectPro/
-├── employee-service/     ✅ Opérationnel
+├── employee/                 ✅ Multi-module Maven
+│   ├── employee-contract/    ✅ DTOs partagés (EmployeeState)
+│   └── employee-service/     ✅ Opérationnel
+│       ├── REST API CRUD
+│       ├── Kafka Producer (topic: employee.state)
+│       ├── Pattern Outbox
+│       ├── Sécurité JWT
+│       └── OpenAPI/Swagger
+├── leave-service/            ✅ Opérationnel
 │   ├── REST API CRUD
-│   ├── Kafka Producer (topic: employee.state)
-│   ├── Pattern Outbox
-│   ├── Sécurité JWT
-│   └── OpenAPI/Swagger
-├── leave-service/        🏗️ Structure créée (coquille vide)
-│   ├── REST API CRUD (squelette)
-│   ├── Kafka Consumer (employee.state) - à implémenter
-│   ├── Kafka Producer (leave.state) - à implémenter
+│   ├── Kafka Consumer (employee.state)
+│   ├── Kafka Producer (leave.state) + Outbox
 │   ├── Projection EmployeeSnapshot
+│   ├── Dépend de employee-contract
 │   └── OpenAPI/Swagger
-├── interview-service/    ⏳ À créer
-├── payroll-service/      ⏳ À créer
-└── reporting-service/    ⏳ À créer
+├── interview-service/        ⏳ À créer
+├── payroll-service/          ⏳ À créer
+└── reporting-service/        ⏳ À créer
 ```
 
 ---
@@ -159,13 +175,11 @@ curl http://localhost:8082/api/leaves
 
 ## 🎯 Prochaine étape recommandée
 
-**TP5 : Leave-Service**
+**TP6 : Interview-Service & Payroll-Service**
 
-Créer le second microservice qui :
-1. Consomme les événements `employee.state`
-2. Stocke une projection locale `EmployeeSnapshot`
-3. Gère les congés (CRUD)
-4. Publie sur `leave.state`
+Créer les microservices suivants :
+1. **Interview-Service** : consomme `employee.state`, publie `interview.state`
+2. **Payroll-Service** : consomme tous les événements, calcule la paie
 
 ---
 

@@ -1,5 +1,6 @@
 package com.hrconnect.leave.infrastructure.event;
 
+import com.hrconnect.employee.contract.EmployeeState;
 import com.hrconnect.leave.domain.model.EmployeeSnapshot;
 import com.hrconnect.leave.domain.repository.EmployeeSnapshotRepository;
 import lombok.RequiredArgsConstructor;

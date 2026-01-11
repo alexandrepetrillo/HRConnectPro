@@ -3,7 +3,7 @@ package com.hrconnect.employee.infrastructure.outbox;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrconnect.employee.domain.model.Employee;
-import com.hrconnect.employee.infrastructure.event.EmployeeState;
+import com.hrconnect.employee.contract.EmployeeState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
