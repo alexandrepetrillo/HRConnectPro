@@ -40,13 +40,7 @@ public class OutboxEvent {
     private String aggregateId;
 
     /**
-     * Type d'événement (ex: EmployeeCreated, EmployeeUpdated)
-     */
-    @Column(nullable = false, length = 100)
-    private String eventType;
-
-    /**
-     * Payload JSON de l'événement
+     * Payload JSON de l'état
      */
     @Column(nullable = false, columnDefinition = "TEXT")
     private String payload;

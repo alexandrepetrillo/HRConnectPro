@@ -58,9 +58,9 @@ public class EmployeeService {
         Employee saved = employeeRepository.save(employee);
 
         // Enregistrement dans l'Outbox (dans la même transaction)
-        outboxService.saveEmployeeEvent(saved, "EmployeeCreated");
+        outboxService.saveEmployeeState(saved);
 
-        log.info("Employee created and event saved to outbox: {}", saved.getReference());
+        log.info("Employee created and state saved to outbox: {}", saved.getReference());
         return saved;
     }
 
@@ -87,9 +87,9 @@ public class EmployeeService {
         Employee updated = employeeRepository.save(existing);
 
         // Enregistrement dans l'Outbox (dans la même transaction)
-        outboxService.saveEmployeeEvent(updated, "EmployeeUpdated");
+        outboxService.saveEmployeeState(updated);
 
-        log.info("Employee updated and event saved to outbox: {}", updated.getReference());
+        log.info("Employee updated and state saved to outbox: {}", updated.getReference());
         return updated;
     }
 

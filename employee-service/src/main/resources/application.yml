@@ -35,8 +35,7 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
-        spring.json.add.type.headers: true
-        spring.json.type.mapping: Employee:com.hrconnect.employee.infrastructure.event.EmployeeStateEvent
+        spring.json.add.type.headers: false
 
 server:
   port: 8081

@@ -24,13 +24,13 @@ public class OutboxService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Enregistre un événement Employee dans l'Outbox
+     * Enregistre l'état d'un Employee dans l'Outbox
      * Cette méthode doit être appelée dans la même transaction que la sauvegarde de l'employé
      */
     @Transactional
-    public void saveEmployeeEvent(Employee employee, String eventType) {
+    public void saveEmployeeState(Employee employee) {
         try {
-            // Construire l'événement snapshot
+            // Construire l'état
             EmployeeState state = buildEmployeeState(employee);
 
             // Sérialiser en JSON
@@ -40,7 +40,6 @@ public class OutboxService {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                 .aggregateType("Employee")
                 .aggregateId(employee.getReference())
-                .eventType(eventType)
                 .payload(payload)
                 .createdAt(Instant.now())
                 .published(false)
@@ -49,8 +48,7 @@ public class OutboxService {
 
             outboxEventRepository.save(outboxEvent);
 
-            log.debug("Outbox event saved: aggregateId={}, eventType={}",
-                employee.getReference(), eventType);
+            log.debug("Outbox state saved: aggregateId={}", employee.getReference());
 
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize employee event for outbox: {}", employee.getReference(), e);

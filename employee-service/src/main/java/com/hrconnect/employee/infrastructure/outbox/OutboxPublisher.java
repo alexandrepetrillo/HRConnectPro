@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrconnect.employee.infrastructure.event.EmployeeState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.mapping.AbstractJavaTypeMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
@@ -21,116 +25,129 @@ import java.util.List;
 @Slf4j
 public class OutboxPublisher {
 
-    private static final String EMPLOYEE_TOPIC = "employee.state";
-    private static final int BATCH_SIZE = 100;
-    private static final int MAX_RETRY = 5;
+  private static final String EMPLOYEE_TOPIC = "employee.state";
+  private static final int BATCH_SIZE = 100;
+  private static final int MAX_RETRY = 5;
+  public static final String EMPLOYEE = "Employee";
 
-    private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, EmployeeState> kafkaTemplate;
-    private final ObjectMapper objectMapper;
+  private final OutboxEventRepository outboxEventRepository;
+  private final KafkaTemplate<String, EmployeeState> kafkaTemplate;
+  private final ObjectMapper objectMapper;
 
-    /**
-     * Publication périodique des événements non publiés
-     * Exécuté toutes les 5 secondes
-     */
-    @Scheduled(fixedDelay = 5000, initialDelay = 10000)
-    public void publishPendingEvents() {
-        log.debug("Starting outbox publisher cycle");
+  /**
+   * Publication périodique des événements non publiés
+   * Exécuté toutes les 5 secondes
+   */
+  @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+  public void publishPendingEvents() {
+    log.debug("Starting outbox publisher cycle");
 
-        List<OutboxEvent> unpublishedEvents = outboxEventRepository
-            .findUnpublishedEventsWithLimit(BATCH_SIZE);
+    List<OutboxEvent> unpublishedEvents = outboxEventRepository
+      .findUnpublishedEventsWithLimit(BATCH_SIZE);
 
-        if (unpublishedEvents.isEmpty()) {
-            log.trace("No pending events in outbox");
-            return;
+    if (unpublishedEvents.isEmpty()) {
+      log.trace("No pending events in outbox");
+      return;
+    }
+
+    log.info("Found {} unpublished events in outbox", unpublishedEvents.size());
+
+    for (OutboxEvent outboxEvent : unpublishedEvents) {
+      try {
+        publishEvent(outboxEvent);
+      } catch (Exception e) {
+        handlePublicationError(outboxEvent, e);
+      }
+    }
+  }
+
+  private void publishEvent(OutboxEvent outboxEvent) throws Exception {
+    log.debug("Publishing outbox state: id={}, aggregateId={}",
+      outboxEvent.getId(), outboxEvent.getAggregateId());
+
+    // Désérialiser le payload
+    EmployeeState stateEvent = objectMapper.readValue(
+      outboxEvent.getPayload(),
+      EmployeeState.class
+    );
+
+    // Créer le ProducerRecord avec le header __TypeId__
+    ProducerRecord<String, EmployeeState> record = new ProducerRecord<>(
+      EMPLOYEE_TOPIC,
+      null,
+      outboxEvent.getAggregateId(),
+      stateEvent
+    );
+    record.headers().add(new RecordHeader(
+      AbstractJavaTypeMapper.DEFAULT_CLASSID_FIELD_NAME,
+      EMPLOYEE.getBytes(StandardCharsets.UTF_8)
+    ));
+
+    // Publier sur Kafka
+    kafkaTemplate.send(record)
+      .whenComplete((result, ex) -> {
+        if (ex == null) {
+          markAsPublished(outboxEvent);
+          log.info("Outbox event published successfully: id={}, aggregateId={}, partition={}",
+            outboxEvent.getId(), outboxEvent.getAggregateId(),
+            result.getRecordMetadata().partition());
+        } else {
+          log.error("Failed to publish outbox event to Kafka: id={}, aggregateId={}",
+            outboxEvent.getId(), outboxEvent.getAggregateId(), ex);
+          incrementRetryCount(outboxEvent, ex.getMessage());
         }
+      })
+      .get(); // Attendre la confirmation (synchrone pour la gestion transactionnelle)
+  }
 
-        log.info("Found {} unpublished events in outbox", unpublishedEvents.size());
+  @Transactional
+  protected void markAsPublished(OutboxEvent outboxEvent) {
+    outboxEvent.setPublished(true);
+    outboxEvent.setPublishedAt(Instant.now());
+    outboxEventRepository.save(outboxEvent);
+    log.debug("Outbox event marked as published: id={}", outboxEvent.getId());
+  }
 
-        for (OutboxEvent outboxEvent : unpublishedEvents) {
-            try {
-                publishEvent(outboxEvent);
-            } catch (Exception e) {
-                handlePublicationError(outboxEvent, e);
-            }
-        }
+  @Transactional
+  protected void incrementRetryCount(OutboxEvent outboxEvent, String errorMessage) {
+    outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
+    outboxEvent.setErrorMessage(errorMessage);
+
+    if (outboxEvent.getRetryCount() >= MAX_RETRY) {
+      log.error("Max retry count reached for outbox event: id={}, aggregateId={}. Event will be skipped.",
+        outboxEvent.getId(), outboxEvent.getAggregateId());
+      // Optionnel : marquer comme publié pour éviter les tentatives infinies
+      // ou déplacer vers une table d'événements en échec
+      outboxEvent.setPublished(true);
+      outboxEvent.setPublishedAt(Instant.now());
     }
 
-    private void publishEvent(OutboxEvent outboxEvent) throws Exception {
-        log.debug("Publishing outbox event: id={}, aggregateId={}, eventType={}",
-            outboxEvent.getId(), outboxEvent.getAggregateId(), outboxEvent.getEventType());
+    outboxEventRepository.save(outboxEvent);
+  }
 
-        // Désérialiser le payload
-        EmployeeState stateEvent = objectMapper.readValue(
-            outboxEvent.getPayload(),
-            EmployeeState.class
-        );
+  @Transactional
+  protected void handlePublicationError(OutboxEvent outboxEvent, Exception e) {
+    log.error("Error processing outbox event: id={}, aggregateId={}",
+      outboxEvent.getId(), outboxEvent.getAggregateId(), e);
 
-        // Publier sur Kafka
-        kafkaTemplate.send(EMPLOYEE_TOPIC, outboxEvent.getAggregateId(), stateEvent)
-            .whenComplete((result, ex) -> {
-                if (ex == null) {
-                    markAsPublished(outboxEvent);
-                    log.info("Outbox event published successfully: id={}, aggregateId={}, partition={}",
-                        outboxEvent.getId(), outboxEvent.getAggregateId(),
-                        result.getRecordMetadata().partition());
-                } else {
-                    log.error("Failed to publish outbox event to Kafka: id={}, aggregateId={}",
-                        outboxEvent.getId(), outboxEvent.getAggregateId(), ex);
-                    incrementRetryCount(outboxEvent, ex.getMessage());
-                }
-            })
-            .get(); // Attendre la confirmation (synchrone pour la gestion transactionnelle)
+    outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
+    outboxEvent.setErrorMessage(e.getMessage());
+
+    if (outboxEvent.getRetryCount() >= MAX_RETRY) {
+      log.error("Max retry count reached for outbox event: id={}. Marking as published to prevent infinite loop.",
+        outboxEvent.getId());
+      outboxEvent.setPublished(true);
+      outboxEvent.setPublishedAt(Instant.now());
     }
 
-    @Transactional
-    protected void markAsPublished(OutboxEvent outboxEvent) {
-        outboxEvent.setPublished(true);
-        outboxEvent.setPublishedAt(Instant.now());
-        outboxEventRepository.save(outboxEvent);
-        log.debug("Outbox event marked as published: id={}", outboxEvent.getId());
-    }
+    outboxEventRepository.save(outboxEvent);
+  }
 
-    @Transactional
-    protected void incrementRetryCount(OutboxEvent outboxEvent, String errorMessage) {
-        outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
-        outboxEvent.setErrorMessage(errorMessage);
-
-        if (outboxEvent.getRetryCount() >= MAX_RETRY) {
-            log.error("Max retry count reached for outbox event: id={}, aggregateId={}. Event will be skipped.",
-                outboxEvent.getId(), outboxEvent.getAggregateId());
-            // Optionnel : marquer comme publié pour éviter les tentatives infinies
-            // ou déplacer vers une table d'événements en échec
-            outboxEvent.setPublished(true);
-            outboxEvent.setPublishedAt(Instant.now());
-        }
-
-        outboxEventRepository.save(outboxEvent);
-    }
-
-    @Transactional
-    protected void handlePublicationError(OutboxEvent outboxEvent, Exception e) {
-        log.error("Error processing outbox event: id={}, aggregateId={}",
-            outboxEvent.getId(), outboxEvent.getAggregateId(), e);
-
-        outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
-        outboxEvent.setErrorMessage(e.getMessage());
-
-        if (outboxEvent.getRetryCount() >= MAX_RETRY) {
-            log.error("Max retry count reached for outbox event: id={}. Marking as published to prevent infinite loop.",
-                outboxEvent.getId());
-            outboxEvent.setPublished(true);
-            outboxEvent.setPublishedAt(Instant.now());
-        }
-
-        outboxEventRepository.save(outboxEvent);
-    }
-
-    /**
-     * Méthode pour obtenir des statistiques sur l'Outbox
-     */
-    public long getPendingEventsCount() {
-        return outboxEventRepository.countByPublished(false);
-    }
+  /**
+   * Méthode pour obtenir des statistiques sur l'Outbox
+   */
+  public long getPendingEventsCount() {
+    return outboxEventRepository.countByPublished(false);
+  }
 }
 
