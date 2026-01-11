@@ -34,8 +34,7 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        spring.json.use.type.headers: true
-        spring.json.value.type.mapping: Employee:com.hrconnect.leave.infrastructure.event.EmployeeStateEvent
+        spring.json.use.type.headers: false
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -44,7 +43,8 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
-        spring.json.add.type.headers: true
+        spring.json.add.type.headers: false
+        spring.json.type.mapping: Employee:com.hrconnect.leave.infrastructure.event.EmployeeState
 
 server:
   port: 8082

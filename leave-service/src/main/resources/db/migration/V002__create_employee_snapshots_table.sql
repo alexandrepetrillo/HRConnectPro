@@ -7,8 +7,6 @@ CREATE TABLE employee_snapshots (
     departement VARCHAR(100),
     manager_id VARCHAR(255),
     salaire_annuel_base DOUBLE PRECISION NOT NULL,
-    last_event_id VARCHAR(255) NOT NULL,
-    version INTEGER NOT NULL,
     last_updated TIMESTAMP NOT NULL
 );
 

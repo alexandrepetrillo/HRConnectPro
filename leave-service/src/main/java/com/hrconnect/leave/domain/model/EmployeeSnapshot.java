@@ -39,12 +39,6 @@ public class EmployeeSnapshot {
     private Double salaireAnnuelBase;
 
     @Column(nullable = false)
-    private String lastEventId;
-
-    @Column(nullable = false)
-    private Integer version;
-
-    @Column(nullable = false)
     private LocalDateTime lastUpdated;
 
     @PrePersist

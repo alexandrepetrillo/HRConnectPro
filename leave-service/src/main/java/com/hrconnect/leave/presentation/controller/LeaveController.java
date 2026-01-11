@@ -71,5 +71,29 @@ public class LeaveController {
         leaveService.deleteLeave(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/approve")
+    @Operation(summary = "Approuver un congé")
+    public ResponseEntity<Leave> approveLeave(@PathVariable Long id) {
+        log.info("POST /api/leaves/{}/approve - Approving leave", id);
+        Leave approvedLeave = leaveService.approveLeave(id);
+        return ResponseEntity.ok(approvedLeave);
+    }
+
+    @PostMapping("/{id}/reject")
+    @Operation(summary = "Refuser un congé")
+    public ResponseEntity<Leave> rejectLeave(@PathVariable Long id, @RequestParam(required = false) String reason) {
+        log.info("POST /api/leaves/{}/reject - Rejecting leave", id);
+        Leave rejectedLeave = leaveService.rejectLeave(id, reason);
+        return ResponseEntity.ok(rejectedLeave);
+    }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Annuler un congé")
+    public ResponseEntity<Leave> cancelLeave(@PathVariable Long id) {
+        log.info("POST /api/leaves/{}/cancel - Cancelling leave", id);
+        Leave cancelledLeave = leaveService.cancelLeave(id);
+        return ResponseEntity.ok(cancelledLeave);
+    }
 }
 

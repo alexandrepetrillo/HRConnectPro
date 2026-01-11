@@ -1,17 +1,21 @@
 package com.hrconnect.leave.application.service;
 
 import com.hrconnect.leave.domain.model.Leave;
+import com.hrconnect.leave.domain.model.LeaveStatus;
 import com.hrconnect.leave.domain.repository.EmployeeSnapshotRepository;
 import com.hrconnect.leave.domain.repository.LeaveRepository;
+import com.hrconnect.leave.infrastructure.outbox.OutboxService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
  * Service métier pour la gestion des congés
+ * Utilise le pattern Outbox pour garantir la cohérence transactionnelle
  */
 @Service
 @RequiredArgsConstructor
@@ -20,6 +24,7 @@ public class LeaveService {
 
     private final LeaveRepository leaveRepository;
     private final EmployeeSnapshotRepository employeeSnapshotRepository;
+    private final OutboxService outboxService;
 
     /**
      * Crée un nouveau congé
@@ -28,14 +33,29 @@ public class LeaveService {
     public Leave createLeave(Leave leave) {
         log.info("Creating leave for employee: {}", leave.getEmployeeId());
 
-        // TODO: Vérifier que l'employé existe dans le snapshot local
-        // TODO: Valider les dates
-        // TODO: Calculer le nombre de jours posés
+        // 1. Vérifier que l'employé existe dans le snapshot local
+        if (!employeeSnapshotRepository.existsByEmployeeId(leave.getEmployeeId())) {
+            throw new EmployeeNotFoundException("Employee not found in local snapshot: " + leave.getEmployeeId());
+        }
 
+        // 2. Valider les dates
+        validateDates(leave);
+
+        // 3. Calculer le nombre de jours posés
+        long joursPoses = ChronoUnit.DAYS.between(leave.getDateDebut(), leave.getDateFin()) + 1;
+        leave.setJoursPoses((int) joursPoses);
+
+        // 4. Définir le statut par défaut si non renseigné
+        if (leave.getStatut() == null) {
+            leave.setStatut(LeaveStatus.EN_ATTENTE);
+        }
+
+        // 5. Sauvegarder
         Leave savedLeave = leaveRepository.save(leave);
         log.info("Leave created with id: {}", savedLeave.getId());
 
-        // TODO: Publier l'événement leave.state
+        // 6. Enregistrer dans l'Outbox (dans la même transaction)
+        outboxService.saveLeaveState(savedLeave);
 
         return savedLeave;
     }
@@ -65,7 +85,7 @@ public class LeaveService {
     public Leave getLeaveById(Long id) {
         log.debug("Fetching leave with id: {}", id);
         return leaveRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Leave not found with id: " + id));
+                .orElseThrow(() -> new LeaveNotFoundException("Leave not found with id: " + id));
     }
 
     /**
@@ -77,10 +97,104 @@ public class LeaveService {
 
         Leave leave = getLeaveById(id);
 
-        // TODO: Mettre à jour les champs
-        // TODO: Publier l'événement leave.state
+        // Mettre à jour les champs modifiables
+        if (leaveDetails.getType() != null) {
+            leave.setType(leaveDetails.getType());
+        }
+        if (leaveDetails.getDateDebut() != null) {
+            leave.setDateDebut(leaveDetails.getDateDebut());
+        }
+        if (leaveDetails.getDateFin() != null) {
+            leave.setDateFin(leaveDetails.getDateFin());
+        }
+        if (leaveDetails.getStatut() != null) {
+            leave.setStatut(leaveDetails.getStatut());
+        }
+        if (leaveDetails.getCommentaire() != null) {
+            leave.setCommentaire(leaveDetails.getCommentaire());
+        }
+        if (leaveDetails.getJoursTravaillesMois() != null) {
+            leave.setJoursTravaillesMois(leaveDetails.getJoursTravaillesMois());
+        }
+        if (leaveDetails.getJoursPosesMois() != null) {
+            leave.setJoursPosesMois(leaveDetails.getJoursPosesMois());
+        }
 
-        return leaveRepository.save(leave);
+        // Recalculer les jours posés si les dates ont changé
+        validateDates(leave);
+        long joursPoses = ChronoUnit.DAYS.between(leave.getDateDebut(), leave.getDateFin()) + 1;
+        leave.setJoursPoses((int) joursPoses);
+
+        Leave updatedLeave = leaveRepository.save(leave);
+
+        // Enregistrer dans l'Outbox (dans la même transaction)
+        outboxService.saveLeaveState(updatedLeave);
+
+        return updatedLeave;
+    }
+
+    /**
+     * Valide un congé (approuve)
+     */
+    @Transactional
+    public Leave approveLeave(Long id) {
+        log.info("Approving leave with id: {}", id);
+        Leave leave = getLeaveById(id);
+
+        if (leave.getStatut() != LeaveStatus.EN_ATTENTE) {
+            throw new InvalidLeaveStatusException("Can only approve leaves that are in EN_ATTENTE status");
+        }
+
+        leave.setStatut(LeaveStatus.VALIDE);
+        Leave approvedLeave = leaveRepository.save(leave);
+
+        // Enregistrer dans l'Outbox (dans la même transaction)
+        outboxService.saveLeaveState(approvedLeave);
+
+        return approvedLeave;
+    }
+
+    /**
+     * Refuse un congé
+     */
+    @Transactional
+    public Leave rejectLeave(Long id, String reason) {
+        log.info("Rejecting leave with id: {}", id);
+        Leave leave = getLeaveById(id);
+
+        if (leave.getStatut() != LeaveStatus.EN_ATTENTE) {
+            throw new InvalidLeaveStatusException("Can only reject leaves that are in EN_ATTENTE status");
+        }
+
+        leave.setStatut(LeaveStatus.REFUSE);
+        leave.setCommentaire(reason);
+        Leave rejectedLeave = leaveRepository.save(leave);
+
+        // Enregistrer dans l'Outbox (dans la même transaction)
+        outboxService.saveLeaveState(rejectedLeave);
+
+        return rejectedLeave;
+    }
+
+    /**
+     * Annule un congé
+     */
+    @Transactional
+    public Leave cancelLeave(Long id) {
+        log.info("Cancelling leave with id: {}", id);
+        Leave leave = getLeaveById(id);
+
+        if (leave.getStatut() == LeaveStatus.ANNULE) {
+            throw new InvalidLeaveStatusException("Leave is already cancelled");
+        }
+
+        leave.setStatut(LeaveStatus.ANNULE);
+        Leave cancelledLeave = leaveRepository.save(leave);
+
+        // Enregistrer dans l'Outbox (dans la même transaction)
+        outboxService.saveLeaveState(cancelledLeave);
+
+        return cancelledLeave;
     }
 
     /**
@@ -89,7 +203,44 @@ public class LeaveService {
     @Transactional
     public void deleteLeave(Long id) {
         log.info("Deleting leave with id: {}", id);
+        if (!leaveRepository.existsById(id)) {
+            throw new LeaveNotFoundException("Leave not found with id: " + id);
+        }
         leaveRepository.deleteById(id);
+    }
+
+    private void validateDates(Leave leave) {
+        if (leave.getDateDebut() == null || leave.getDateFin() == null) {
+            throw new InvalidLeaveDatesException("Date de début et date de fin sont obligatoires");
+        }
+        if (leave.getDateDebut().isAfter(leave.getDateFin())) {
+            throw new InvalidLeaveDatesException("Date de début doit être avant ou égale à la date de fin");
+        }
+    }
+
+    // Exceptions personnalisées
+    public static class EmployeeNotFoundException extends RuntimeException {
+        public EmployeeNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    public static class LeaveNotFoundException extends RuntimeException {
+        public LeaveNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    public static class InvalidLeaveDatesException extends RuntimeException {
+        public InvalidLeaveDatesException(String message) {
+            super(message);
+        }
+    }
+
+    public static class InvalidLeaveStatusException extends RuntimeException {
+        public InvalidLeaveStatusException(String message) {
+            super(message);
+        }
     }
 }
 
