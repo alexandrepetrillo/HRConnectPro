@@ -3,14 +3,13 @@ package com.hrconnect.employee.infrastructure.outbox;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrconnect.employee.domain.model.Employee;
-import com.hrconnect.employee.infrastructure.event.EmployeeStateEvent;
+import com.hrconnect.employee.infrastructure.event.EmployeeState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Service pour écrire dans la table Outbox
@@ -32,10 +31,10 @@ public class OutboxService {
     public void saveEmployeeEvent(Employee employee, String eventType) {
         try {
             // Construire l'événement snapshot
-            EmployeeStateEvent stateEvent = buildEmployeeStateEvent(employee);
+            EmployeeState state = buildEmployeeState(employee);
 
             // Sérialiser en JSON
-            String payload = objectMapper.writeValueAsString(stateEvent);
+            String payload = objectMapper.writeValueAsString(state);
 
             // Créer l'entrée Outbox
             OutboxEvent outboxEvent = OutboxEvent.builder()
@@ -59,27 +58,21 @@ public class OutboxService {
         }
     }
 
-    private EmployeeStateEvent buildEmployeeStateEvent(Employee employee) {
-        return EmployeeStateEvent.builder()
-            .eventId(UUID.randomUUID().toString())
-            .timestamp(Instant.now())
-            .version(employee.getVersion())
-            .source("employee-service")
-            .employee(EmployeeStateEvent.EmployeeSnapshot.builder()
-                .reference(employee.getReference())
-                .nom(employee.getNom())
-                .email(employee.getEmail())
-                .telephone(employee.getTelephone())
-                .role(employee.getRole())
-                .departement(employee.getDepartement())
-                .managerId(employee.getManagerId())
-                .contrat(employee.getContrat() != null ? EmployeeStateEvent.ContratSnapshot.builder()
-                    .type(employee.getContrat().getType())
-                    .debut(employee.getContrat().getDebut() != null ? employee.getContrat().getDebut().toString() : null)
-                    .fin(employee.getContrat().getFin() != null ? employee.getContrat().getFin().toString() : null)
-                    .build() : null)
-                .salaireAnnuelBase(employee.getSalaireAnnuelBase())
-                .build())
+    private EmployeeState buildEmployeeState(Employee employee) {
+        return EmployeeState.builder()
+            .reference(employee.getReference())
+            .nom(employee.getNom())
+            .email(employee.getEmail())
+            .telephone(employee.getTelephone())
+            .role(employee.getRole())
+            .departement(employee.getDepartement())
+            .managerId(employee.getManagerId())
+            .contrat(employee.getContrat() != null ? EmployeeState.ContratState.builder()
+                .type(employee.getContrat().getType())
+                .debut(employee.getContrat().getDebut() != null ? employee.getContrat().getDebut().toString() : null)
+                .fin(employee.getContrat().getFin() != null ? employee.getContrat().getFin().toString() : null)
+                .build() : null)
+            .salaireAnnuelBase(employee.getSalaireAnnuelBase())
             .build();
     }
 }

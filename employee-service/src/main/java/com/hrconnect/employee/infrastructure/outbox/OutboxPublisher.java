@@ -1,7 +1,7 @@
 package com.hrconnect.employee.infrastructure.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hrconnect.employee.infrastructure.event.EmployeeStateEvent;
+import com.hrconnect.employee.infrastructure.event.EmployeeState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -26,7 +26,7 @@ public class OutboxPublisher {
     private static final int MAX_RETRY = 5;
 
     private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, EmployeeStateEvent> kafkaTemplate;
+    private final KafkaTemplate<String, EmployeeState> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
     /**
@@ -61,9 +61,9 @@ public class OutboxPublisher {
             outboxEvent.getId(), outboxEvent.getAggregateId(), outboxEvent.getEventType());
 
         // Désérialiser le payload
-        EmployeeStateEvent stateEvent = objectMapper.readValue(
+        EmployeeState stateEvent = objectMapper.readValue(
             outboxEvent.getPayload(),
-            EmployeeStateEvent.class
+            EmployeeState.class
         );
 
         // Publier sur Kafka
