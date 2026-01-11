@@ -31,18 +31,29 @@
 - **Observabilité** : Actuator + métriques Prometheus
 - **Documentation** : Swagger UI
 
-### ⚠️ À implémenter : TP1b - REST synchrone
+### ⚠️ À implémenter : TP1b - REST synchrone & Transaction distribuée
 
 **Objectif pédagogique** : Montrer les problèmes de l'approche REST synchrone avant Kafka.
 
-| Problème | Description |
-|----------|-------------|
-| Couplage fort | Leave-Service dépend de Employee-Service au runtime |
-| Timeout | Si Employee est lent/down, Leave bloque |
-| Latence | +50-200ms par appel réseau |
-| Cascade de pannes | Un service down → tous les dépendants down |
-| Transaction distribuée | Incohérence si panne pendant la transaction |
-| Circuit Breaker | Nécessaire mais ajoute de la complexité |
+**Scénario principal** : À la création d'un employé, Employee-Service doit appeler Leave-Service pour initialiser le compteur de congés (25j CP, 12j RTT).
+
+```
+Employee-Service                    Leave-Service
+     |                                   |
+     |  1. Créer employé            ✅   |
+     |  2. Appeler /leave-counters ──────> ❌ CRASH
+     |                                   |
+     |  Employé créé MAIS compteur       |
+     |  non initialisé → INCOHÉRENCE     |
+```
+
+| Problème | Impact métier |
+|----------|---------------|
+| Transaction distribuée | Employé sans compteur → ne peut pas poser de congés |
+| Couplage fort | Leave down → Employee ne peut plus créer |
+| Rollback impossible | Comment annuler l'employé si Leave échoue ? |
+
+**Solution Kafka** : Leave-Service consomme `employee.state` et initialise le compteur localement (déjà implémenté dans `EmployeeEventConsumer`).
 
 ---
 

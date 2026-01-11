@@ -9,8 +9,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Projection locale des employés (snapshot)
- * Stocke les informations nécessaires depuis employee.state
+ * Projection locale des employés (snapshot).
+ *
+ * RÈGLE D'ARCHITECTURE : Cette entité contient UNIQUEMENT les données
+ * provenant du microservice Employee (via l'événement employee.state).
+ * Les données propres à Leave-Service (compteurs, etc.) sont dans des entités séparées.
+ *
+ * @see LeaveCounter pour les compteurs de congés propres à Leave-Service
  */
 @Entity
 @Table(name = "employee_snapshots")
@@ -37,6 +42,7 @@ public class EmployeeSnapshot {
 
     @Column(nullable = false)
     private Double salaireAnnuelBase;
+
 
     @Column(nullable = false)
     private LocalDateTime lastUpdated;

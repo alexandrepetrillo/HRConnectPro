@@ -84,7 +84,11 @@
 
 **Objectif pédagogique** : Montrer l'approche "classique" REST synchrone et ses problèmes avant d'introduire Kafka comme solution.
 
-**Scénario** : Leave-Service doit valider qu'un employé existe avant de créer un congé.
+---
+
+#### Scénario 1 : Couplage fort (simple)
+
+**Situation** : Leave-Service doit valider qu'un employé existe avant de créer un congé.
 
 ```java
 // LeaveService.java - Version synchrone (problématique)
@@ -110,23 +114,88 @@ public class LeaveService {
 }
 ```
 
+**Problèmes démontrés** : couplage fort, timeout, cascade de pannes.
+
+---
+
+#### Scénario 2 : Transaction distribuée (clé !) 🔥
+
+**Situation** : À la création d'un employé, il faut initialiser son compteur de congés (25j CP, 12j RTT) dans Leave-Service.
+
+```
+Employee-Service                         Leave-Service
+     |                                        |
+     |  1. POST /employees                    |
+     |  2. Créer employé en DB           ✅   |
+     |  3. Initialiser compteur ──────────────> POST /api/leave-counters
+     |     congés pour ce nouvel              |  4. Créer compteur (25j CP, 12j RTT)
+     |     employé                            |  ❌ CRASH / TIMEOUT
+     |                                        |
+     |  Employé créé                          |  Compteur NON initialisé
+     |  → Il ne pourra JAMAIS poser          |
+     |    de congés !                         |
+```
+
+**Code problématique :**
+```java
+// EmployeeService.java - Version synchrone (DANGER !)
+@Service
+public class EmployeeService {
+
+    private final RestTemplate restTemplate;
+    private final EmployeeRepository employeeRepository;
+
+    @Transactional // ⚠️ Transaction LOCALE uniquement !
+    public Employee createEmployee(EmployeeRequest request) {
+        // 1. Créer l'employé (transaction locale)
+        Employee employee = employeeRepository.save(mapToEmployee(request));
+        // → COMMIT local effectué ici
+
+        // 2. Initialiser le compteur congés chez Leave-Service
+        // ⚠️ HORS transaction ! Si cet appel échoue → INCOHÉRENCE
+        restTemplate.postForObject(
+            "http://localhost:8082/api/leave-counters",
+            new LeaveCounterInit(employee.getReference(), 25, 12),
+            Void.class
+        );
+        // → Si CRASH ICI : employé créé MAIS pas de compteur congés !
+
+        return employee;
+    }
+}
+```
+
+**Impact métier :**
+
+| Situation | Conséquence |
+|-----------|-------------|
+| Employé créé, compteur non initialisé | L'employé ne peut pas poser de congés (solde = null) |
+| Compteur créé, employé non créé | Compteur orphelin, données incohérentes |
+| Retry sans idempotence | Risque de double compteur |
+
+**Pourquoi c'est insoluble en REST synchrone ?**
+- Pas de transaction distribuée native en REST
+- 2-Phase Commit (2PC) : complexe, lent, SPOF
+- Saga pattern : faisable mais compensation manuelle = code spaghetti
+
+---
+
 **🧑‍💻 TP guidé étudiant (20 min) :**
-- [ ] Créer une version simplifiée de `leave-service` avec `RestTemplate`
-- [ ] Implémenter l'appel REST vers Employee-Service
-- [ ] Tester le flux nominal (créer employé → créer congé)
-- [ ] Observer le comportement quand tout fonctionne
+- [ ] Créer un endpoint `/api/leave-counters` dans Leave-Service
+- [ ] Modifier Employee-Service pour appeler cet endpoint à la création
+- [ ] Tester le flux nominal (créer employé → compteur initialisé)
+- [ ] Simuler un crash de Leave-Service après création de l'employé
+- [ ] Observer l'incohérence : employé sans compteur
 
 **⚠️ Démonstration des problèmes (10 min) :**
 
 | Problème | Démonstration | Impact |
 |----------|---------------|--------|
-| **Couplage fort** | Leave-Service ne peut pas démarrer/fonctionner sans Employee-Service | Dépendance runtime |
-| **Timeout** | Arrêter Employee-Service → Leave bloque puis timeout | UX dégradée |
-| **Latence** | Chaque requête ajoute ~50-200ms de latence réseau | Performance |
-| **Cascade de pannes** | Employee down → Leave down → tous les dépendants down | Fragilité |
-| **Transaction distribuée** | Congé créé mais Employee tombe après validation | Incohérence données |
-| **Retry complexe** | Quelle politique ? Idempotence ? Timeout ? | Code complexe |
-| **Circuit Breaker nécessaire** | Sans CB, on continue d'appeler un service mort | Ressources gaspillées |
+| **Couplage fort** | Leave-Service down → Employee ne peut pas créer | Dépendance runtime |
+| **Timeout** | Arrêter Leave-Service → Employee bloque 30s | UX dégradée |
+| **Transaction distribuée** | Employé créé, compteur non initialisé | Incohérence métier grave |
+| **Retry complexe** | Retry = double compteur ? Idempotence ? | Code complexe |
+| **Circuit Breaker** | Créer employé sans compteur ? Rollback ? | Décision métier difficile |
 
 **Script de démonstration :**
 ```bash
@@ -134,31 +203,41 @@ public class LeaveService {
 cd employee/employee-service && mvn spring-boot:run &
 cd leave-service && mvn spring-boot:run &
 
-# 2. Créer un employé
+# 2. Créer un employé → ✅ fonctionne
 curl -X POST http://localhost:8081/api/employees \
   -H "Content-Type: application/json" \
   -d '{"nom":"Alice","email":"alice@test.com"}'
 
-# 3. Créer un congé → ✅ fonctionne
-curl -X POST http://localhost:8082/api/leaves \
+# 3. Vérifier le compteur → ✅ initialisé
+curl http://localhost:8082/api/leave-counters/EMP-001
+# → {"soldeCP": 25, "soldeRTT": 12}
+
+# 4. ARRÊTER Leave-Service
+pkill -f leave-service
+
+# 5. Créer un autre employé
+curl -X POST http://localhost:8081/api/employees \
   -H "Content-Type: application/json" \
-  -d '{"employeeId":"EMP-xxx","type":"CP","dateDebut":"2026-02-01","dateFin":"2026-02-05"}'
+  -d '{"nom":"Bob","email":"bob@test.com"}'
+# → Timeout après 30s puis erreur 500 (ou employé créé sans compteur)
 
-# 4. ARRÊTER Employee-Service
-pkill -f employee-service
+# 6. Redémarrer Leave-Service
+cd leave-service && mvn spring-boot:run &
 
-# 5. Créer un congé → ❌ ÉCHEC (timeout/500)
-curl -X POST http://localhost:8082/api/leaves ...
-# → Les étudiants voient concrètement le problème
+# 7. Vérifier : Bob existe mais n'a PAS de compteur !
+curl http://localhost:8081/api/employees/EMP-002  # → ✅ Bob existe
+curl http://localhost:8082/api/leave-counters/EMP-002  # → ❌ 404 Not Found
 
-# 6. Redémarrer Employee-Service → Leave refonctionne
-# → Couplage fort démontré
+# 8. Bob ne peut pas poser de congés → INCOHÉRENCE MÉTIER
 ```
 
 **Questions à poser aux étudiants :**
-- "Comment faire pour que Leave-Service fonctionne même si Employee est down ?"
-- "Comment éviter les appels réseau à chaque création de congé ?"
-- "Comment garantir la cohérence si Employee tombe pendant la transaction ?"
+1. "Comment garantir que l'employé ET son compteur sont créés ensemble ?"
+2. "Quelle solution si on ne peut pas faire de transaction distribuée ?"
+3. "Comment Leave-Service peut-il initialiser le compteur sans appel REST ?"
+
+**Réponse attendue → Transition vers Kafka :**
+> "Au lieu que Employee appelle Leave, Employee publie un événement. Leave consomme cet événement et initialise le compteur LOCALEMENT, dans sa propre transaction. C'est l'eventual consistency."
 
 **Transition vers Kafka :**
 > "On a vu les limites du REST synchrone. Maintenant, voyons comment l'architecture event-driven avec Kafka résout ces problèmes..."

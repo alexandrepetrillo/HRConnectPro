@@ -49,42 +49,87 @@ employee/                           # Module parent (pom)
 
 ### Objectif pédagogique
 
-Montrer les **problèmes de l'approche REST synchrone** pour justifier l'introduction de Kafka.
+Montrer les **problèmes de l'approche REST synchrone** pour justifier l'introduction de Kafka, notamment le problème de **transaction distribuée**.
 
-### Scénario
+---
 
-Leave-Service appelle Employee-Service en REST pour valider qu'un employé existe avant de créer un congé.
+### Scénario principal : Création employé + initialisation compteur 🔥
+
+**Problématique** : À la création d'un employé, il faut initialiser son compteur de congés (25j CP, 12j RTT) dans Leave-Service.
+
+```
+Employee-Service                         Leave-Service
+     |                                        |
+     |  1. POST /employees                    |
+     |  2. Créer employé en DB           ✅   |
+     |  3. Initialiser compteur ──────────────> POST /api/leave-counters
+     |     congés pour ce nouvel              |  4. Créer compteur (25j CP, 12j RTT)
+     |     employé                            |  ❌ CRASH / TIMEOUT
+     |                                        |
+     |  Employé créé                          |  Compteur NON initialisé
+     |  → Il ne pourra JAMAIS poser          |
+     |    de congés !                         |
+```
 
 ### Implémentation à faire
 
+**1. Endpoint dans Leave-Service :**
 ```java
-// LeaveService.java - Version synchrone (problématique)
+// LeaveCounterController.java
+@RestController
+@RequestMapping("/api/leave-counters")
+@RequiredArgsConstructor
+public class LeaveCounterController {
+
+    private final EmployeeSnapshotRepository repository;
+
+    @PostMapping
+    public ResponseEntity<Void> initializeCounter(@RequestBody LeaveCounterInit request) {
+        EmployeeSnapshot snapshot = EmployeeSnapshot.builder()
+            .employeeId(request.getEmployeeId())
+            .nom(request.getNom())
+            .email(request.getEmail())
+            .soldeCP(request.getSoldeCP())    // 25 jours
+            .soldeRTT(request.getSoldeRTT())  // 12 jours
+            .build();
+        repository.save(snapshot);
+        return ResponseEntity.ok().build();
+    }
+}
+```
+
+**2. Appel REST dans Employee-Service :**
+```java
+// EmployeeService.java - Version synchrone (DANGER !)
 @Service
 @RequiredArgsConstructor
-public class LeaveServiceSync {
-    
+public class EmployeeService {
+
     private final RestTemplate restTemplate;
-    private final LeaveRepository leaveRepository;
-    
-    public Leave createLeave(LeaveRequest request) {
-        // ⚠️ Appel synchrone à Employee-Service
-        String url = "http://localhost:8081/api/employees/" + request.getEmployeeId();
-        
-        try {
-            ResponseEntity<EmployeeDTO> response = restTemplate.getForEntity(
-                url, EmployeeDTO.class
-            );
-            
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new EmployeeNotFoundException(request.getEmployeeId());
-            }
-        } catch (RestClientException e) {
-            // ⚠️ Que faire ici ? Retry ? Timeout ? Circuit Breaker ?
-            throw new ServiceUnavailableException("Employee-Service indisponible", e);
-        }
-        
-        // Créer le congé
-        return leaveRepository.save(mapToLeave(request));
+    private final EmployeeRepository employeeRepository;
+
+    @Transactional // ⚠️ Transaction LOCALE uniquement !
+    public Employee createEmployee(EmployeeRequest request) {
+        // 1. Créer l'employé (transaction locale)
+        Employee employee = employeeRepository.save(mapToEmployee(request));
+        // → COMMIT local effectué ici
+
+        // 2. Initialiser le compteur congés chez Leave-Service
+        // ⚠️ HORS transaction ! Si cet appel échoue → INCOHÉRENCE
+        restTemplate.postForObject(
+            "http://localhost:8082/api/leave-counters",
+            new LeaveCounterInit(
+                employee.getReference(),
+                employee.getNom(),
+                employee.getEmail(),
+                25,  // CP
+                12   // RTT
+            ),
+            Void.class
+        );
+        // → Si CRASH ICI : employé créé MAIS pas de compteur congés !
+
+        return employee;
     }
 }
 ```
@@ -93,14 +138,11 @@ public class LeaveServiceSync {
 
 | Problème | Démonstration | Impact métier |
 |----------|---------------|---------------|
-| **Couplage fort** | Leave ne démarre pas si Employee est down | Déploiement couplé |
-| **Timeout** | Arrêter Employee → Leave bloque 30s | UX dégradée |
-| **Latence cumulée** | +50-200ms par appel réseau | Performance |
-| **Cascade de pannes** | Employee down → Leave down → tout down | Fragilité système |
-| **Transaction distribuée** | Congé créé, puis Employee tombe | Incohérence données |
-| **Retry complexe** | Combien de fois ? Délai ? Idempotence ? | Code spaghetti |
-| **Circuit Breaker** | Sans CB, on bombarde un service mort | Ressources gaspillées |
-| **Scalabilité** | Chaque requête = appel réseau | Goulet d'étranglement |
+| **Transaction distribuée** | Employé créé, compteur non initialisé | Employé ne peut pas poser de congés |
+| **Couplage fort** | Leave down → Employee ne peut plus créer | Dépendance runtime critique |
+| **Timeout** | Arrêter Leave → Employee bloque 30s | UX dégradée |
+| **Retry complexe** | Retry = double compteur ? | Incohérence données |
+| **Rollback impossible** | Comment annuler l'employé si Leave échoue ? | Compensation manuelle |
 
 ### Script de démonstration
 
@@ -109,45 +151,91 @@ public class LeaveServiceSync {
 cd employee/employee-service && mvn spring-boot:run &
 cd leave-service && mvn spring-boot:run &
 
-# 2. Créer un employé
+# 2. Créer un employé → ✅ fonctionne
 curl -X POST http://localhost:8081/api/employees \
   -H "Content-Type: application/json" \
-  -d '{"nom":"Alice","email":"alice@test.com","role":"DEVELOPER"}'
-# → Récupérer la référence EMP-xxx
+  -d '{"nom":"Alice","email":"alice@test.com"}'
 
-# 3. Créer un congé → ✅ Fonctionne
-curl -X POST http://localhost:8082/api/leaves \
+# 3. Vérifier le compteur → ✅ initialisé
+curl http://localhost:8082/api/leave-counters/EMP-001
+# → {"soldeCP": 25, "soldeRTT": 12}
+
+# 4. ARRÊTER Leave-Service
+pkill -f leave-service
+
+# 5. Créer un autre employé
+curl -X POST http://localhost:8081/api/employees \
   -H "Content-Type: application/json" \
-  -d '{"employeeId":"EMP-xxx","type":"CP","dateDebut":"2026-02-01","dateFin":"2026-02-05"}'
+  -d '{"nom":"Bob","email":"bob@test.com"}'
+# → Timeout 30s puis erreur 500 (ou employé créé sans compteur selon l'implémentation)
 
-# 4. ARRÊTER Employee-Service
-pkill -f employee-service
+# 6. Redémarrer Leave-Service
+cd leave-service && mvn spring-boot:run &
 
-# 5. Créer un congé → ❌ TIMEOUT puis ERREUR 503
-curl -X POST http://localhost:8082/api/leaves ...
-# → Attente longue puis échec
-# → Les étudiants voient le problème concrètement
+# 7. Vérifier l'incohérence
+curl http://localhost:8081/api/employees/EMP-002  # → ✅ Bob existe
+curl http://localhost:8082/api/leave-counters/EMP-002  # → ❌ 404 Not Found !
 
-# 6. Montrer les logs Leave-Service
-# → ConnectException, timeout, retry failed...
-
-# 7. Redémarrer Employee-Service
-cd employee/employee-service && mvn spring-boot:run &
-
-# 8. Recréer un congé → ✅ Refonctionne
-# → Couplage fort démontré
+# 8. Bob essaie de poser un congé → ERREUR
+curl -X POST http://localhost:8082/api/leaves \
+  -d '{"employeeId":"EMP-002","type":"CP","dateDebut":"2026-02-01","dateFin":"2026-02-05"}'
+# → "Solde CP insuffisant" ou "Employé inconnu" → INCOHÉRENCE MÉTIER
 ```
 
 ### Questions à poser aux étudiants
 
-1. "Comment Leave peut-il fonctionner même si Employee est down ?"
-2. "Comment éviter un appel réseau à chaque création de congé ?"
-3. "Comment garantir la cohérence si Employee tombe pendant la transaction ?"
-4. "Quelle est la solution pour découpler ces services ?"
+1. "Comment garantir que l'employé ET son compteur sont créés ensemble ?"
+2. "Peut-on utiliser une transaction distribuée (2PC) ?" → Non, trop complexe/lent
+3. "Comment Leave-Service peut-il initialiser le compteur sans appel REST depuis Employee ?"
 
-### Transition vers Kafka
+### Transition vers Kafka (solution)
 
-> "On a vu les limites du REST synchrone. L'architecture event-driven avec Kafka résout ces problèmes en permettant à chaque service de stocker localement les données dont il a besoin (projection/snapshot)."
+> "Au lieu que Employee appelle Leave en REST, Employee **publie un événement** `employee.state`. Leave-Service **consomme** cet événement et initialise le compteur **localement**, dans sa propre transaction."
+
+**Solution event-driven :**
+```
+Employee-Service                         Leave-Service
+     |                                        |
+     |  1. Créer employé + outbox        ✅   |
+     |     (même transaction locale)          |
+     |  2. Publier employee.state ────────────> Kafka
+     |                                        |  3. Consomme employee.state
+     |                                        |  4. Crée 2 entités (même transaction) :
+     |                                        |     - EmployeeSnapshot (données externes)
+     |                                        |     - LeaveCounter (données propres)
+     |                                        |     → Idempotent, rejouable
+```
+
+**Règle d'architecture : Séparation Snapshot vs Données propres**
+
+Les entités `*Snapshot` ne contiennent QUE les données provenant d'autres MS.
+Les données propres à Leave-Service sont dans des entités séparées.
+
+**Code actuel du consumer (déjà implémenté) :**
+```java
+// EmployeeEventConsumer.java dans Leave-Service
+@Transactional
+public void consumeEmployeeState(EmployeeState state) {
+    // 1. Créer le snapshot (données EXTERNES d'Employee-Service)
+    EmployeeSnapshot snapshot = EmployeeSnapshot.builder()
+        .employeeId(state.getReference())
+        .nom(state.getNom())
+        .email(state.getEmail())
+        // ... uniquement les champs de employee.state
+        .build();
+    employeeSnapshotRepository.save(snapshot);
+
+    // 2. Créer le compteur (données PROPRES à Leave-Service)
+    if (!leaveCounterRepository.existsByEmployeeId(employeeRef)) {
+        LeaveCounter counter = LeaveCounter.builder()
+            .employeeId(employeeRef)
+            .soldeCP(25)   // Données propres
+            .soldeRTT(12)  // Pas de données externes ici
+            .build();
+        leaveCounterRepository.save(counter);
+    }
+}
+```
 
 ---
 
