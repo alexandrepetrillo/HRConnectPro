@@ -24,6 +24,7 @@
         <module>employee</module>
         <module>interview</module>
         <module>leave-service</module>
+        <module>payroll</module>
     </modules>
 
     <properties>
