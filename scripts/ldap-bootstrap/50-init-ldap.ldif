@@ -71,9 +71,9 @@ title: Software Developer
 departmentNumber: IT
 userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
 
-dn: cn=admins,ou=groups,dc=hrconnect,dc=local
+dn: cn=admin,ou=groups,dc=hrconnect,dc=local
 objectClass: groupOfNames
-cn: admins
+cn: admin
 description: Administrateurs HRConnect
 member: uid=admin,ou=users,dc=hrconnect,dc=local
 

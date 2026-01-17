@@ -1,45 +1,72 @@
 #!/bin/bash
 
-# Script pour purger un topic Kafka
-# Usage: ./kafka-purge-topic.sh <topic-name>
+# Script pour purger les topics Kafka
+# Usage:
+#   ./kafka-purge-topic.sh           # Purge tous les topics de l'application
+#   ./kafka-purge-topic.sh <topic>   # Purge un topic spécifique
 
 set -e
 
-TOPIC_NAME=${1:-"employee.state"}
 KAFKA_CONTAINER="hrconnect-kafka"
+BOOTSTRAP_SERVER="localhost:9093"
 
-echo "🗑️  Purging Kafka topic: $TOPIC_NAME"
+# Liste des topics de l'application
+ALL_TOPICS=(
+  "employee.state"
+  "leave.state"
+  "interview.state"
+)
 
-# Méthode 1: Supprimer et recréer le topic (le plus rapide et propre)
-echo "📋 Method 1: Delete and recreate topic"
-echo "--------------------------------------"
+# Fonction pour purger un topic
+purge_topic() {
+  local topic=$1
+  echo ""
+  echo "🗑️  Purging topic: $topic"
+  echo "--------------------------------------"
 
-# Supprimer le topic
-echo "Deleting topic $TOPIC_NAME..."
-docker exec $KAFKA_CONTAINER kafka-topics \
-  --bootstrap-server localhost:9092 \
-  --delete \
-  --topic $TOPIC_NAME || echo "Topic doesn't exist or already deleted"
+  # Supprimer le topic
+  echo "   Deleting topic $topic..."
+  docker exec $KAFKA_CONTAINER kafka-topics \
+    --bootstrap-server $BOOTSTRAP_SERVER \
+    --delete \
+    --topic $topic 2>/dev/null || echo "   Topic doesn't exist or already deleted"
 
-# Attendre un peu
-sleep 2
+  # Attendre un peu
+  sleep 1
 
-# Recréer le topic
-echo "Recreating topic $TOPIC_NAME..."
-docker exec $KAFKA_CONTAINER kafka-topics \
-  --bootstrap-server localhost:9092 \
-  --create \
-  --topic $TOPIC_NAME \
-  --partitions 3 \
-  --replication-factor 1
+  # Recréer le topic
+  echo "   Recreating topic $topic..."
+  docker exec $KAFKA_CONTAINER kafka-topics \
+    --bootstrap-server $BOOTSTRAP_SERVER \
+    --create \
+    --topic $topic \
+    --partitions 3 \
+    --replication-factor 1 2>/dev/null || echo "   Topic already exists"
 
-echo "✅ Topic $TOPIC_NAME has been purged and recreated!"
+  echo "   ✅ Topic $topic purged!"
+}
 
-# Vérifier
+# Si un argument est passé, purger uniquement ce topic
+if [ -n "$1" ]; then
+  purge_topic "$1"
+else
+  # Sinon, purger tous les topics
+  echo "🚀 Purging ALL application topics..."
+  echo "=================================================="
+
+  for topic in "${ALL_TOPICS[@]}"; do
+    purge_topic "$topic"
+  done
+fi
+
 echo ""
-echo "📊 Topic details:"
+echo "=================================================="
+echo "✅ Purge completed!"
+echo ""
+
+# Afficher tous les topics
+echo "📊 Current topics:"
 docker exec $KAFKA_CONTAINER kafka-topics \
-  --bootstrap-server localhost:9092 \
-  --describe \
-  --topic $TOPIC_NAME
+  --bootstrap-server $BOOTSTRAP_SERVER \
+  --list
 

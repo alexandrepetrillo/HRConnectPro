@@ -2,6 +2,7 @@ package com.hrconnect.interview.infrastructure.config;
 
 import com.hrconnect.employee.contract.EmployeeState;
 import com.hrconnect.interview.contract.InterviewState;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -14,14 +15,21 @@ import org.springframework.kafka.core.*;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
+import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@Slf4j
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
+
+    @PostConstruct
+    public void init() {
+        log.info("Kafka bootstrap servers configured: {}", bootstrapServers);
+    }
 
     // ========== PRODUCER CONFIG ==========
 
@@ -56,6 +64,8 @@ public class KafkaConfig {
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.hrconnect.*");
         configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, EmployeeState.class.getName());
         configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+
+        log.info("Creating Kafka consumer factory with bootstrap servers: {}", bootstrapServers);
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 

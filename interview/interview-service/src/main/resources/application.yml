@@ -61,7 +61,7 @@ logging:
   level:
     com.hrconnect.interview: DEBUG
     org.springframework.kafka: INFO
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: INFO
 
 # OpenAPI / Swagger
 springdoc:

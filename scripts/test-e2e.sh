@@ -131,7 +131,7 @@ authenticate() {
 
     local response=$(curl -s -X POST "${EMPLOYEE_URL}/api/auth/login" \
         -H "Content-Type: application/json" \
-        -d '{"username":"admin","password":"admin"}')
+        -d '{"username":"admin","password":"password"}')
 
     TOKEN=$(echo "$response" | jq -r '.token // empty')
 
@@ -155,20 +155,26 @@ scenario_nominal() {
     # --- Création employé ---
     print_step "2. Création d'un employé (avec téléphone)"
 
-    local employee_data='{
-        "nom": "Jean Dupont",
-        "prenom": "Jean",
-        "email": "jean.dupont@company.com",
-        "telephone": "0612345678",
-        "role": "Développeur Senior",
-        "departement": "IT",
-        "dateNaissance": "1985-05-15",
-        "contrat": {
-            "type": "CDI",
-            "debut": "2024-01-15"
+    # Générer une référence unique
+    local timestamp=$(date +%s)
+    local random_suffix=$((RANDOM % 1000))
+
+    local employee_data="{
+        \"reference\": \"EMP-TEST-${timestamp}-${random_suffix}\",
+        \"nom\": \"Jean Dupont\",
+        \"prenom\": \"Jean\",
+        \"email\": \"jean.dupont.${timestamp}@company.com\",
+        \"telephone\": \"0612345678\",
+        \"numeroSecuriteSociale\": \"185057512345678\",
+        \"role\": \"Développeur Senior\",
+        \"departement\": \"IT\",
+        \"dateNaissance\": \"1985-05-15\",
+        \"contrat\": {
+            \"type\": \"CDI\",
+            \"debut\": \"2024-01-15\"
         },
-        "salaireAnnuelBase": 48000
-    }'
+        \"salaireAnnuelBase\": 48000
+    }"
 
     local emp_response=$(curl -s -X POST "${EMPLOYEE_URL}/api/employees" \
         -H "Authorization: Bearer $TOKEN" \
@@ -305,20 +311,26 @@ scenario_dlq() {
     # --- Création employé sans téléphone ---
     print_step "1. Création d'un employé SANS téléphone"
 
-    local employee_data='{
-        "nom": "Bob Sans-Tel",
-        "prenom": "Bob",
-        "email": "bob.sanstel@company.com",
-        "role": "Stagiaire",
-        "departement": "Marketing",
-        "dateNaissance": "2000-03-20",
-        "contrat": {
-            "type": "STAGE",
-            "debut": "2026-01-01",
-            "fin": "2026-06-30"
+    # Générer une référence unique
+    local timestamp=$(date +%s)
+    local random_suffix=$((RANDOM % 1000))
+
+    local employee_data="{
+        \"reference\": \"EMP-DLQ-${timestamp}-${random_suffix}\",
+        \"nom\": \"Bob Sans-Tel\",
+        \"prenom\": \"Bob\",
+        \"email\": \"bob.sanstel.${timestamp}@company.com\",
+        \"numeroSecuriteSociale\": \"200032012345678\",
+        \"role\": \"Stagiaire\",
+        \"departement\": \"Marketing\",
+        \"dateNaissance\": \"2000-03-20\",
+        \"contrat\": {
+            \"type\": \"STAGE\",
+            \"debut\": \"2026-01-01\",
+            \"fin\": \"2026-06-30\"
         },
-        "salaireAnnuelBase": 12000
-    }'
+        \"salaireAnnuelBase\": 12000
+    }"
 
     local emp_response=$(curl -s -X POST "${EMPLOYEE_URL}/api/employees" \
         -H "Authorization: Bearer $TOKEN" \
@@ -390,10 +402,12 @@ scenario_dlq() {
 scenario_multi() {
     print_header "SCÉNARIO MULTI-EMPLOYÉS : Création de plusieurs profils"
 
+    local timestamp=$(date +%s)
+
     local employees=(
-        '{"nom":"Alice Martin","email":"alice@company.com","telephone":"0611111111","role":"Manager","departement":"IT","salaireAnnuelBase":65000,"contrat":{"type":"CDI","debut":"2023-01-01"}}'
-        '{"nom":"Charlie Brown","email":"charlie@company.com","telephone":"0622222222","role":"Designer","departement":"Marketing","salaireAnnuelBase":42000,"contrat":{"type":"CDI","debut":"2024-06-01"}}'
-        '{"nom":"Diana Prince","email":"diana@company.com","telephone":"0633333333","role":"Architecte","departement":"IT","salaireAnnuelBase":72000,"contrat":{"type":"CDI","debut":"2022-03-15"}}'
+        "{\"reference\":\"EMP-ALICE-${timestamp}\",\"nom\":\"Alice Martin\",\"email\":\"alice.${timestamp}@company.com\",\"telephone\":\"0611111111\",\"numeroSecuriteSociale\":\"290017512345678\",\"role\":\"Manager\",\"departement\":\"IT\",\"dateNaissance\":\"1990-01-15\",\"salaireAnnuelBase\":65000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2023-01-01\"}}"
+        "{\"reference\":\"EMP-CHARLIE-${timestamp}\",\"nom\":\"Charlie Brown\",\"email\":\"charlie.${timestamp}@company.com\",\"telephone\":\"0622222222\",\"numeroSecuriteSociale\":\"192067812345678\",\"role\":\"Designer\",\"departement\":\"Marketing\",\"dateNaissance\":\"1992-06-20\",\"salaireAnnuelBase\":42000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2024-06-01\"}}"
+        "{\"reference\":\"EMP-DIANA-${timestamp}\",\"nom\":\"Diana Prince\",\"email\":\"diana.${timestamp}@company.com\",\"telephone\":\"0633333333\",\"numeroSecuriteSociale\":\"288031212345678\",\"role\":\"Architecte\",\"departement\":\"IT\",\"dateNaissance\":\"1988-03-12\",\"salaireAnnuelBase\":72000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2022-03-15\"}}"
     )
 
     local created_refs=()
