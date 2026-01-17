@@ -1,14 +1,14 @@
 # 🎯 HRConnectPro - État des lieux
 
-> **Dernière mise à jour** : 16 janvier 2026
+> **Dernière mise à jour** : 17 janvier 2026
 
 ## 📊 Progression globale
 
 | Jour | Statut | Description |
 |------|--------|-------------|
 | **Jour 1** | ✅ 100% | Fondation & Architecture Microservices |
-| **Jour 2** | ✅ 85% | Événements, Communication & Sécurité |
-| **Jour 3** | ⏳ 0% | Observabilité, Résilience & Production |
+| **Jour 2** | ✅ 100% | Événements, Communication & Sécurité |
+| **Jour 3** | ⏳ 40% | Observabilité, Résilience & Production |
 
 ---
 
@@ -33,14 +33,14 @@
 
 ---
 
-## ✅ Jour 2 - EN COURS (85%)
+## ✅ Jour 2 - COMPLET
 
 | TP | Statut | Description |
 |----|--------|-------------|
 | TP5 | ✅ | Leave-Service avec consommation employee.state |
 | TP5b | ✅ | Refactoring multi-module Maven (employee-contract) |
 | TP6 | ✅ | Interview-Service (fourni) |
-| TP7 | ✅ **NOUVEAU** | **Payroll-Service - Agrégation multi-sources** |
+| TP7 | ✅ | **Payroll-Service - Agrégation multi-sources** |
 
 ### Leave-Service - Opérationnel ✅
 
@@ -57,10 +57,14 @@
 
 ### Interview-Service - Opérationnel ✅
 
-**Structure similaire à Leave-Service avec :**
+**Structure complète :**
 - ✅ Entité `Interview` avec types (ANNUEL, PROFESSIONNEL, CARRIERE)
+- ✅ Entité `EmployeeSnapshot` (projection)
+- ✅ Service métier `InterviewService`
+- ✅ Controller REST `InterviewController`
+- ✅ Consumer Kafka (`EmployeeEventConsumer`)
+- ✅ Pattern Outbox pour publication `interview.state`
 - ✅ Champ `augmentationAccordee` pour les augmentations
-- ✅ Publication sur `interview.state`
 
 ### 🆕 Payroll-Service - Opérationnel ✅
 
@@ -214,12 +218,28 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 
 ---
 
-## ⏳ Jour 3 - À FAIRE
+## ⏳ Jour 3 - EN COURS (40%)
 
-| TP | Description |
-|----|-------------|
-| TP8 | Observabilité (dashboards Grafana, tracing Jaeger) |
-| TP9 | Résilience (Resilience4j, DLQ Kafka) |
+| TP | Statut | Description |
+|----|--------|-------------|
+| TP8 | ⏳ | Observabilité (dashboards Grafana, tracing Jaeger) |
+| TP9 | ✅ Partiel | Résilience : **Resilience4j fait**, DLQ Kafka à faire |
+
+### Resilience4j - Implémenté ✅
+
+**Fonctionnalités :**
+- ✅ **CircuitBreaker** sur `SecuValidatorClient` (vérification n° sécu)
+- ✅ **Retry** automatique en cas d'erreur temporaire
+- ✅ **Fallback** : mode dégradé si service externe en panne
+- ✅ Mock WireMock (`secu-validator`) pour les tests
+
+**Documentation** : `employee/employee-service/README-RESILIENCE4J.md`
+
+### À faire
+
+- ⏳ Dashboards Grafana personnalisés
+- ⏳ Tracing distribué (Jaeger)
+- ⏳ DLQ Kafka pour les erreurs de consommation
 
 ---
 

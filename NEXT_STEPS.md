@@ -1,6 +1,6 @@
 # 🚀 Prochaines étapes - HRConnectPro
 
-> **Dernière mise à jour** : 11 janvier 2026
+> **Dernière mise à jour** : 17 janvier 2026
 
 ## ✅ Ce qui est fait
 
@@ -432,7 +432,7 @@ POST /api/payroll/generate?month=2026-01      → Générer toutes les fiches du
 
 ### TP8 : Résilience
 
-- [ ] Resilience4j (Circuit Breaker, Retry, Rate Limiter)
+- [x] Resilience4j (Circuit Breaker, Retry) ✅ **FAIT** - voir `README-RESILIENCE4J.md`
 - [ ] Dead Letter Queue (DLQ) Kafka
 - [ ] Gestion des erreurs de consommation
 
@@ -515,6 +515,6 @@ curl -X POST http://localhost:8082/api/leaves \
 | TP4 | Sécurité LDAP + JWT | ✅ |
 | TP5 | Leave-Service + consommation Kafka | ✅ |
 | TP5b | Multi-module Maven | ✅ |
-| TP6 | Interview & Payroll Services | ⏳ |
+| TP6 | Interview & Payroll Services | ✅ |
 | TP7 | Observabilité | ⏳ |
-| TP8 | Résilience | ⏳ |
+| TP8 | Résilience (Resilience4j) | ✅ Partiel (DLQ à faire) |
