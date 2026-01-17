@@ -433,8 +433,8 @@ POST /api/payroll/generate?month=2026-01      → Générer toutes les fiches du
 ### TP8 : Résilience
 
 - [x] Resilience4j (Circuit Breaker, Retry) ✅ **FAIT** - voir `README-RESILIENCE4J.md`
-- [ ] Dead Letter Queue (DLQ) Kafka
-- [ ] Gestion des erreurs de consommation
+- [x] Dead Letter Queue (DLQ) Kafka ✅ **FAIT** - voir `payroll/payroll-service/README-DLQ.md`
+- [x] Gestion des erreurs de consommation ✅
 
 ---
 
@@ -517,4 +517,4 @@ curl -X POST http://localhost:8082/api/leaves \
 | TP5b | Multi-module Maven | ✅ |
 | TP6 | Interview & Payroll Services | ✅ |
 | TP7 | Observabilité | ⏳ |
-| TP8 | Résilience (Resilience4j) | ✅ Partiel (DLQ à faire) |
+| TP8 | Résilience (Resilience4j + DLQ) | ✅ |

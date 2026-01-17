@@ -37,6 +37,13 @@ public class EmployeeSnapshot {
     @Column(nullable = false)
     private String email;
 
+    /**
+     * ⚠️ BUG VOLONTAIRE : Le dev a mis nullable=false en pensant que le téléphone
+     * est toujours renseigné. Ça marchait... jusqu'à ce qu'un employé soit créé sans téléphone !
+     *
+     * Quand un employé sans téléphone arrive → ConstraintViolationException → DLQ
+     */
+    @Column(nullable = false)  // ❌ BUG : devrait être nullable=true
     private String telephone;
 
     private String role;

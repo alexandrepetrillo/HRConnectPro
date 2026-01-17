@@ -8,7 +8,7 @@
 |------|--------|-------------|
 | **Jour 1** | ✅ 100% | Fondation & Architecture Microservices |
 | **Jour 2** | ✅ 100% | Événements, Communication & Sécurité |
-| **Jour 3** | ⏳ 40% | Observabilité, Résilience & Production |
+| **Jour 3** | ⏳ 60% | Observabilité, Résilience & Production |
 
 ---
 
@@ -218,12 +218,12 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 
 ---
 
-## ⏳ Jour 3 - EN COURS (40%)
+## ⏳ Jour 3 - EN COURS (60%)
 
 | TP | Statut | Description |
 |----|--------|-------------|
 | TP8 | ⏳ | Observabilité (dashboards Grafana, tracing Jaeger) |
-| TP9 | ✅ Partiel | Résilience : **Resilience4j fait**, DLQ Kafka à faire |
+| TP9 | ✅ | Résilience : **Resilience4j + DLQ Kafka** |
 
 ### Resilience4j - Implémenté ✅
 
@@ -235,11 +235,28 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 
 **Documentation** : `employee/employee-service/README-RESILIENCE4J.md`
 
+### DLQ Kafka - Implémenté ✅
+
+**Fonctionnalités :**
+- ✅ **Dead Letter Queue** configurée sur Payroll-Service
+- ✅ **Retry 3x** avec intervalle de 1 seconde
+- ✅ **Error Handler** avec `DeadLetterPublishingRecoverer`
+- ✅ **API REST** pour lister et rejouer les messages DLQ
+- ✅ **Scénario de démo** : contrainte NOT NULL sur téléphone
+
+**Documentation** : `payroll/payroll-service/README-DLQ.md`
+
+**Endpoints DLQ** :
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| GET | `/api/dlq/{topic}` | Lister les messages DLQ |
+| GET | `/api/dlq/{topic}/count` | Compter les messages DLQ |
+| POST | `/api/dlq/{topic}/replay` | Rejouer vers le topic original |
+
 ### À faire
 
 - ⏳ Dashboards Grafana personnalisés
 - ⏳ Tracing distribué (Jaeger)
-- ⏳ DLQ Kafka pour les erreurs de consommation
 
 ---
 
