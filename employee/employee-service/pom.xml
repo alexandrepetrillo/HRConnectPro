@@ -24,6 +24,7 @@
             <artifactId>employee-contract</artifactId>
         </dependency>
 
+
         <!-- Dépendances vers le socle technique -->
         <dependency>
             <groupId>com.hrconnect</groupId>

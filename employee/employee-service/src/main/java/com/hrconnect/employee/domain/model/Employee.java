@@ -31,6 +31,12 @@ public class Employee {
     @Column(nullable = false, length = 200)
     private String nom;
 
+    @Column(nullable = false, unique = true, length = 15, name = "numero_securite_sociale")
+    private String numeroSecuriteSociale;
+
+    @Column(nullable = false, name = "date_naissance")
+    private LocalDate dateNaissance;
+
     @Column(nullable = false, unique = true, length = 200)
     private String email;
 

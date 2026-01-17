@@ -2,6 +2,9 @@ package com.hrconnect.employee.application.service;
 
 import com.hrconnect.employee.domain.model.Employee;
 import com.hrconnect.employee.domain.repository.EmployeeRepository;
+import com.hrconnect.employee.infrastructure.external.SecuValidationException;
+import com.hrconnect.employee.infrastructure.external.SecuValidatorClient;
+import com.hrconnect.employee.infrastructure.external.SecuVerificationResponse;
 import com.hrconnect.employee.infrastructure.kafka.EmployeeEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ public class EmployeeService {
 
   private final EmployeeRepository employeeRepository;
   private final EmployeeEventPublisher employeeEventPublisher;
+  private final SecuValidatorClient secuValidatorClient;
 
   @Transactional(readOnly = true)
   public List<Employee> getAllEmployees() {
@@ -56,6 +60,22 @@ public class EmployeeService {
     // Vérifier si l'employé existe déjà
     if (employeeRepository.existsByReference(employee.getReference())) {
       throw new IllegalArgumentException("Employee already exists: " + employee.getReference());
+    }
+
+    // Vérification du numéro de sécurité sociale auprès du service externe
+    // Le CircuitBreaker gère les pannes, le fallback accepte en mode dégradé
+    SecuVerificationResponse verificationResponse = secuValidatorClient.verify(
+      employee.getNumeroSecuriteSociale(),
+      employee.getNom(),
+      employee.getDateNaissance()
+    );
+
+    if (!verificationResponse.isValid() && !"FALLBACK_MODE".equals(verificationResponse.getErrorCode())) {
+      log.warn("Numéro de sécurité sociale invalide: {}", verificationResponse.getMessage());
+      throw new SecuValidationException(
+        "Numéro de sécurité sociale invalide: " + verificationResponse.getMessage(),
+        verificationResponse.getErrorCode()
+      );
     }
 
     // Sauvegarder l'employé

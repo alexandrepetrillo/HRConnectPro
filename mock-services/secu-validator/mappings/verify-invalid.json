@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/v1/verify",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.numeroSecuriteSociale",
+          "contains": "000"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "valid": false,
+      "message": "Numéro de sécurité sociale invalide ou inconnu",
+      "errorCode": "SECU_NOT_FOUND",
+      "timestamp": "{{now format='yyyy-MM-dd HH:mm:ss'}}"
+    },
+    "transformers": ["response-template"]
+  },
+  "priority": 1
+}
