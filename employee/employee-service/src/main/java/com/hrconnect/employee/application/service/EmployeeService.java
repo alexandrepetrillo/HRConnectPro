@@ -2,6 +2,9 @@ package com.hrconnect.employee.application.service;
 
 import com.hrconnect.employee.domain.model.Employee;
 import com.hrconnect.employee.domain.repository.EmployeeRepository;
+import com.hrconnect.employee.infrastructure.external.SecuValidationException;
+import com.hrconnect.employee.infrastructure.external.SecuValidatorClient;
+import com.hrconnect.employee.infrastructure.external.SecuVerificationResponse;
 import com.hrconnect.employee.infrastructure.outbox.OutboxService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +25,7 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final OutboxService outboxService;
+    private final SecuValidatorClient secuValidatorClient;
 
     @Transactional(readOnly = true)
     public List<Employee> getAllEmployees() {
@@ -46,6 +50,9 @@ public class EmployeeService {
     /**
      * Crée un nouvel employé et enregistre l'événement dans l'Outbox
      * Pattern Outbox : garantit que l'événement sera publié même en cas de panne
+     *
+     * La vérification du numéro de sécurité sociale est effectuée AVANT la création.
+     * En cas de service externe indisponible, le fallback accepte la création (mode dégradé).
      */
     @Transactional
     public Employee createEmployee(Employee employee) {
@@ -53,6 +60,23 @@ public class EmployeeService {
 
         if (employeeRepository.existsByReference(employee.getReference())) {
             throw new IllegalArgumentException("Employee already exists: " + employee.getReference());
+        }
+
+        // Vérification du numéro de sécurité sociale auprès du service externe
+        // Le CircuitBreaker gère les pannes, le fallback accepte en mode dégradé
+        SecuVerificationResponse verificationResponse = secuValidatorClient.verify(
+                employee.getNumeroSecuriteSociale(),
+                employee.getNom(),
+                employee.getPrenom(),
+                employee.getDateNaissance()
+        );
+
+        if (!verificationResponse.isValid() && !"FALLBACK_MODE".equals(verificationResponse.getErrorCode())) {
+            log.warn("Numéro de sécurité sociale invalide: {}", verificationResponse.getMessage());
+            throw new SecuValidationException(
+                    "Numéro de sécurité sociale invalide: " + verificationResponse.getMessage(),
+                    verificationResponse.getErrorCode()
+            );
         }
 
         Employee saved = employeeRepository.save(employee);

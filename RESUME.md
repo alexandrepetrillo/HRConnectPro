@@ -220,8 +220,6 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 |----|-------------|
 | TP8 | Observabilité (dashboards Grafana, tracing Jaeger) |
 | TP9 | Résilience (Resilience4j, DLQ Kafka) |
-| TP10 | Reporting-Service avec Redis |
-| TP11 | Intégration SOAP |
 
 ---
 

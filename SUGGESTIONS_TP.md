@@ -165,23 +165,7 @@ public Employee createEmployee(...) {
 
 ---
 
-### TP10 - Reporting-Service avec Redis Cache
-**Niveau** : ⭐⭐⭐ Avancé | **Durée** : 1h30
-
-**Objectif** : Créer un service de reporting avec cache Redis.
-
-**Ce que l'étudiant doit faire** :
-1. Créer un nouveau microservice `reporting-service`
-2. Consommer tous les topics Kafka
-3. Stocker des métriques agrégées dans Redis
-4. Exposer des endpoints de dashboard :
-   - Nombre d'employés par département
-   - Total des augmentations accordées
-   - Statistiques congés
-
----
-
-### TP11 - Observabilité (Grafana + Jaeger)
+### TP10 - Observabilité (Grafana + Jaeger)
 **Niveau** : ⭐⭐ Moyen | **Durée** : 1h
 
 **Objectif** : Mettre en place le monitoring et le tracing distribué.
@@ -197,7 +181,7 @@ public Employee createEmployee(...) {
 
 ---
 
-### TP12 - Versioning des événements
+### TP11 - Versioning des événements
 **Niveau** : ⭐⭐⭐ Avancé | **Durée** : 45 min
 
 **Objectif** : Gérer l'évolution du schéma des événements Kafka.
@@ -212,7 +196,7 @@ public Employee createEmployee(...) {
 
 ---
 
-### TP13 - Tests d'intégration Kafka
+### TP12 - Tests d'intégration Kafka
 **Niveau** : ⭐⭐⭐ Avancé | **Durée** : 1h
 
 **Objectif** : Tester les consumers/producers Kafka avec Testcontainers.
@@ -226,7 +210,7 @@ public Employee createEmployee(...) {
 
 ---
 
-### TP14 - API Gateway (optionnel)
+### TP13 - API Gateway (optionnel)
 **Niveau** : ⭐⭐⭐⭐ Expert | **Durée** : 2h
 
 **Objectif** : Centraliser les appels API avec Spring Cloud Gateway.
@@ -253,11 +237,10 @@ public Employee createEmployee(...) {
 | Problèmes REST synchrone | TP1b |
 | Gestion erreurs async | TP8 |
 | Résilience | TP9 |
-| Cache Redis | TP10 |
-| Observabilité | TP11 |
-| Versioning événements | TP12 |
-| Tests d'intégration | TP13 |
-| API Gateway | TP14 |
+| Observabilité | TP10 |
+| Versioning événements | TP11 |
+| Tests d'intégration | TP12 |
+| API Gateway | TP13 |
 
 ---
 
@@ -270,7 +253,7 @@ TP1 → TP2 → TP4 → TP5
 TP1 → TP1b → TP2 → TP3 → TP4 → TP5 → TP6
 
 ### Parcours Avancé (3 jours)
-Tous les TP + TP7 → TP8 → TP9 → TP11
+Tous les TP + TP7 → TP8 → TP9 → TP10
 
 ### Focus Architecture Event-Driven
 TP1b → TP2 → TP3 → TP5 → TP7 → TP8

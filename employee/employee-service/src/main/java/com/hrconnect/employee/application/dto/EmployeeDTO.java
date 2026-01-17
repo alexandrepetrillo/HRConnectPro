@@ -26,6 +26,17 @@ public class EmployeeDTO {
     @Size(max = 200, message = "Le nom ne doit pas dépasser 200 caractères")
     private String nom;
 
+    @NotBlank(message = "Le prénom est obligatoire")
+    @Size(max = 200, message = "Le prénom ne doit pas dépasser 200 caractères")
+    private String prenom;
+
+    @NotBlank(message = "Le numéro de sécurité sociale est obligatoire")
+    @Pattern(regexp = "^[12][0-9]{14}$", message = "Le numéro de sécurité sociale doit contenir 15 chiffres et commencer par 1 ou 2")
+    private String numeroSecuriteSociale;
+
+    @NotNull(message = "La date de naissance est obligatoire")
+    private LocalDate dateNaissance;
+
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "L'email doit être valide")
     @Size(max = 200, message = "L'email ne doit pas dépasser 200 caractères")
