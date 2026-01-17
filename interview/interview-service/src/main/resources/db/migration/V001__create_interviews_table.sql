@@ -9,7 +9,7 @@ CREATE TABLE interview.interviews (
     type VARCHAR(50) NOT NULL,
     date_entretien DATE NOT NULL,
     feedback TEXT,
-    augmentation_accordee DECIMAL(10,2),
+    augmentation_accordee DOUBLE PRECISION,
     statut VARCHAR(50) NOT NULL DEFAULT 'PLANIFIE',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

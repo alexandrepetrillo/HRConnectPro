@@ -10,6 +10,9 @@ CREATE SCHEMA IF NOT EXISTS leave;
 -- Schéma pour le microservice Interview
 CREATE SCHEMA IF NOT EXISTS interview;
 
+-- Schéma pour le microservice Payroll
+CREATE SCHEMA IF NOT EXISTS payroll;
+
 -- Accorder les privilèges au user hrconnect pour employee
 GRANT ALL PRIVILEGES ON SCHEMA employee TO hrconnect;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA employee TO hrconnect;
@@ -25,8 +28,13 @@ GRANT ALL PRIVILEGES ON SCHEMA interview TO hrconnect;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA interview TO hrconnect;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA interview TO hrconnect;
 
+-- Accorder les privilèges au user hrconnect pour payroll
+GRANT ALL PRIVILEGES ON SCHEMA payroll TO hrconnect;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA payroll TO hrconnect;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA payroll TO hrconnect;
+
 -- Définir le search_path par défaut pour inclure les schémas
-ALTER DATABASE hrconnect SET search_path TO employee, leave, interview, public;
+ALTER DATABASE hrconnect SET search_path TO employee, leave, interview, payroll, public;
 
 -- Message de confirmation
 DO $$
@@ -35,5 +43,6 @@ BEGIN
     RAISE NOTICE 'Schéma employee créé';
     RAISE NOTICE 'Schéma leave créé';
     RAISE NOTICE 'Schéma interview créé';
+    RAISE NOTICE 'Schéma payroll créé';
 END $$;
 

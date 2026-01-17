@@ -21,7 +21,7 @@ CREATE TABLE payroll.employee_snapshots (
     contrat_type VARCHAR(50),
     contrat_debut DATE,
     contrat_fin DATE,
-    salaire_annuel_base DECIMAL(12, 2) NOT NULL,
+    salaire_annuel_base DOUBLE PRECISION NOT NULL,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -46,7 +46,7 @@ CREATE TABLE payroll.interview_snapshots (
     employee_id VARCHAR(50) NOT NULL,
     date_entretien DATE NOT NULL,
     type VARCHAR(50) NOT NULL,
-    augmentation_accordee DECIMAL(12, 2),
+    augmentation_accordee DOUBLE PRECISION,
     statut VARCHAR(50) NOT NULL,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -62,12 +62,12 @@ CREATE TABLE payroll.payslip_history (
     id BIGSERIAL PRIMARY KEY,
     employee_id VARCHAR(50) NOT NULL,
     period_month VARCHAR(7) NOT NULL, -- Format YYYY-MM
-    salaire_base DECIMAL(12, 2) NOT NULL,
-    total_augmentations DECIMAL(12, 2) NOT NULL DEFAULT 0,
-    salaire_actuel DECIMAL(12, 2) NOT NULL,
+    salaire_base DOUBLE PRECISION NOT NULL,
+    total_augmentations DOUBLE PRECISION NOT NULL DEFAULT 0,
+    salaire_actuel DOUBLE PRECISION NOT NULL,
     jours_conges_sans_solde INTEGER NOT NULL DEFAULT 0,
-    deduction_conges_sans_solde DECIMAL(12, 2) NOT NULL DEFAULT 0,
-    salaire_brut_mensuel DECIMAL(12, 2) NOT NULL,
+    deduction_conges_sans_solde DOUBLE PRECISION NOT NULL DEFAULT 0,
+    salaire_brut_mensuel DOUBLE PRECISION NOT NULL,
     generated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(employee_id, period_month)
 );

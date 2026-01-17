@@ -6,9 +6,9 @@ spring:
     name: payroll-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/hrconnectpro
+    url: jdbc:postgresql://localhost:5433/hrconnect?currentSchema=payroll
     username: hrconnect
-    password: hrconnect123
+    password: hrconnect
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -27,7 +27,7 @@ spring:
     schemas: payroll
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9093
     consumer:
       group-id: payroll-service
       auto-offset-reset: earliest

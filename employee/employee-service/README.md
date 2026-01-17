@@ -66,8 +66,8 @@ docker compose up -d
 ```
 
 Cela démarre :
-- PostgreSQL (port 5432)
-- Kafka + Zookeeper (port 9092)
+- PostgreSQL (port 5433)
+- Kafka + Zookeeper (port 9093)
 - Kafka UI (port 8080)
 - Prometheus (port 9090)
 - Grafana (port 3000)
@@ -184,6 +184,20 @@ Les propriétés principales sont dans `application.yml` :
 - Port : `server.port` (8081)
 
 ## Dépannage
+
+### Réinitialiser la base de données
+
+Pour repartir de zéro (supprimer toutes les données) :
+
+```bash
+# Depuis la racine du projet
+./scripts/reset-db.sh
+```
+
+Ce script :
+1. Supprime tous les schémas (employee, leave, interview) avec CASCADE
+2. Réexécute le script `init-db.sql` pour recréer les schémas
+3. Au prochain démarrage des services, Hibernate recrée les tables
 
 ### L'application ne démarre pas
 

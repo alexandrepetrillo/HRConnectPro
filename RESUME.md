@@ -174,8 +174,8 @@ HRConnectPro/
 
 | Service | Port | Statut |
 |---------|------|--------|
-| PostgreSQL | 5432 | ✅ |
-| Kafka | 9092 | ✅ |
+| PostgreSQL | 5433 | ✅ |
+| Kafka | 9093 | ✅ |
 | Zookeeper | 2181 | ✅ |
 | Kafka UI | 8080 | ✅ |
 | Prometheus | 9090 | ✅ |

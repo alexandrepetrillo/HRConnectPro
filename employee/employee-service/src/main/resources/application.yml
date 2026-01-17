@@ -3,7 +3,7 @@ spring:
     name: employee-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/hrconnect?currentSchema=employee
+    url: jdbc:postgresql://localhost:5433/hrconnect?currentSchema=employee
     username: hrconnect
     password: hrconnect
     driver-class-name: org.postgresql.Driver
@@ -26,7 +26,7 @@ spring:
     default-schema: employee
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9093
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer

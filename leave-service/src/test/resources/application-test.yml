@@ -2,14 +2,14 @@ spring:
   application:
     name: leave-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/hrconnect?currentSchema=leave
+    url: jdbc:postgresql://localhost:5433/hrconnect?currentSchema=leave
     username: hrconnect
     password: hrconnect
   jpa:
     hibernate:
       ddl-auto: validate
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9093
 
 server:
   port: 8082
