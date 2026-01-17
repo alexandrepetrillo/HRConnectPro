@@ -74,3 +74,9 @@ ldap:
   manager-dn: cn=admin,dc=hrconnect,dc=local
   manager-password: admin
 
+# Service externe de vérification du numéro de sécurité sociale
+external:
+  secu-validator:
+    url: http://localhost:8089
+
+

@@ -87,10 +87,21 @@ get_jwt_token() {
     echo ""
 }
 
+# Fonction pour générer un numéro de sécurité sociale valide
+generate_secu_success() {
+    # Génère un numéro valide (pas de 000 ni 999)
+    # Format: 1 ou 2 + 14 chiffres sans "000" ni "999"
+    local prefix=$((RANDOM % 2 + 1))  # 1 ou 2
+    local timestamp=$(date +%s)
+    local suffix=$(printf "%014d" $((timestamp % 100000000000000)) | sed 's/000/123/g' | sed 's/999/888/g')
+    echo "${prefix}${suffix:0:14}"
+}
+
 # Fonction pour créer un employé
 create_employee() {
     local emp_ref="EMP_TEST_$(date +%s)"
     local emp_email="test.kafka.${emp_ref}@hrconnect.com"
+    local emp_secu=$(generate_secu_success)
 
     echo -e "${BLUE}2. Création d'un employé (référence: ${emp_ref})...${NC}"
 
@@ -100,8 +111,11 @@ create_employee() {
         -d "{
             \"reference\": \"${emp_ref}\",
             \"nom\": \"TestKafka\",
+            \"prenom\": \"Kafka\",
             \"email\": \"${emp_email}\",
             \"telephone\": \"+33123456789\",
+            \"numeroSecuriteSociale\": \"${emp_secu}\",
+            \"dateNaissance\": \"1990-01-15\",
             \"role\": \"DEVELOPER\",
             \"departement\": \"IT\",
             \"managerId\": \"EMP001\",

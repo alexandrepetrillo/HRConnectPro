@@ -16,6 +16,8 @@ public class EmployeeState {
 
     private String reference;
     private String nom;
+    private String numeroSecuriteSociale;
+    private String dateNaissance;
     private String email;
     private String telephone;
     private String role;

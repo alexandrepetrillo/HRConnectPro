@@ -44,6 +44,7 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 
 ---
 
+
 ### 🔗 ÉTAPE 03 : Communication HTTP entre Microservices
 **Fichier** : `COURS_ETAPE_03_COMMUNICATION_HTTP_MICROSERVICES.md`
 
@@ -173,6 +174,23 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 
 ---
 
+### 🌐 ÉTAPE 06a : Service Externe de Validation du Numéro de Sécurité Sociale
+**Fichier** : `COURS_ETAPE_06a_SERVICE_EXTERNE_VALIDATION_SECU.md`
+
+**Concepts abordés** :
+- Intégration d'un **service externe REST** (validation numéro de sécu)
+- **WireMock** : simulateur de services pour le développement
+- Scénarios de test : succès, échec métier, erreur technique (timeout/503)
+- Impact de l'**indisponibilité** d'un service externe sur notre système
+- Notion de **dépendance critique**
+- Bonnes pratiques : timeouts, isolation du code client, gestion d'erreurs
+
+**Objectif** : Comprendre les enjeux de l'intégration avec des services externes et savoir les simuler en développement
+
+**⚠️ Démonstration clé** : Arrêter le mock → Impossible de créer des employés
+
+---
+
 ## 🎓 Progression Pédagogique
 
 ```
@@ -193,6 +211,8 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 ÉTAPE 05a : Amélioration du code (Multi-Module, contrats partagés)
     ↓
 ÉTAPE 05b : Soclage technique (Mutualisation du code transverse)
+    ↓
+ÉTAPE 06a : Service externe (validation sécu) + Mock WireMock
 ```
 
 ---
@@ -262,6 +282,19 @@ Les cours référencent ces scripts pour des démonstrations live.
 | Multi-Module Maven | 05a | ⭐⭐ |
 | Shared Contracts | 05a | ⭐⭐⭐ |
 | Semantic Versioning | 05a | ⭐⭐ |
+| Service externe REST | 06a | ⭐⭐ |
+| WireMock (mock de services) | 06a | ⭐⭐ |
+| Dépendance critique | 06a | ⭐⭐ |
+| Transactions distribuées | 03a, 03b | ⭐⭐⭐ |
+| Event-Driven Architecture | 04 | ⭐⭐⭐ |
+| Apache Kafka | 04 | ⭐⭐⭐ |
+| Idempotence | 04 | ⭐⭐⭐ |
+| Eventual Consistency | 04 | ⭐⭐⭐ |
+| Pattern Outbox | 04a | ⭐⭐⭐⭐ |
+| TransactionSynchronization | 04a | ⭐⭐⭐ |
+| Multi-Module Maven | 05a | ⭐⭐ |
+| Shared Contracts | 05a | ⭐⭐⭐ |
+| Semantic Versioning | 05a | ⭐⭐ |
 
 ---
 
@@ -310,8 +343,9 @@ Les cours référencent ces scripts pour des démonstrations live.
 - **ÉTAPE 04** : 3-4 heures (Kafka + event-driven)
 - **ÉTAPE 04a** : 2 heures (résilience + Outbox pattern expliqué)
 - **ÉTAPE 05a** : 2 heures (refactoring multi-module)
+- **ÉTAPE 06a** : 1-2 heures (service externe + WireMock + démonstration indisponibilité)
 
-**Total** : ~15 heures de cours + TP
+**Total** : ~17 heures de cours + TP
 
 ### Points d'Attention
 
@@ -323,12 +357,15 @@ Les cours référencent ces scripts pour des démonstrations live.
 
 4. **ÉTAPE 05a** : Les étudiants comprennent souvent mal l'intérêt du multi-module au début. Montrer des **exemples concrets de problèmes** (modification qui casse leave-service) pour illustrer.
 
+5. **ÉTAPE 06a** : Bien montrer l'impact de l'arrêt du mock WireMock sur la création d'employés. C'est une excellente démonstration des **problèmes de dépendances externes**.
+
 ### Démonstrations Essentielles
 
 - **ÉTAPE 03a** : Arrêter PostgreSQL PENDANT la transaction → COMMIT échoue
 - **ÉTAPE 03b** : Arrêter leave-service AVANT la requête HTTP → désynchronisation
 - **ÉTAPE 04** : Arrêter leave-service, créer un employé, redémarrer → synchronisation automatique
 - **ÉTAPE 05a** : Modifier EmployeeState, montrer l'erreur de compilation dans leave-service
+- **ÉTAPE 06a** : Arrêter WireMock (docker stop secu-validator) → Impossible de créer un employé
 
 ---
 
@@ -344,7 +381,9 @@ slides/
 ├── COURS_ETAPE_03b_PROBLEME_APPEL_APRES_TRANSACTION.md
 ├── COURS_ETAPE_04_COMMUNICATION_KAFKA_EVENEMENTIELLE.md
 ├── COURS_ETAPE_04a_RESILIENCE_ET_PATTERN_OUTBOX.md
-└── COURS_ETAPE_05a_PARTAGE_CONTRATS_MULTIMODULE.md
+├── COURS_ETAPE_05a_PARTAGE_CONTRATS_MULTIMODULE.md
+├── COURS_ETAPE_05b_SOCLAGE_TECHNIQUE.md
+└── COURS_ETAPE_06a_SERVICE_EXTERNE_VALIDATION_SECU.md
 ```
 
 Chaque fichier est **autonome** mais s'appuie sur les concepts des étapes précédentes.
