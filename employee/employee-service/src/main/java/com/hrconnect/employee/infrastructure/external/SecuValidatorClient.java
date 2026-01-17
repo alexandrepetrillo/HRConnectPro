@@ -1,5 +1,7 @@
 package com.hrconnect.employee.infrastructure.external;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +40,8 @@ public class SecuValidatorClient {
      * @param dateNaissance La date de naissance
      * @return true si le numéro est valide, false sinon
      */
+    @CircuitBreaker(name = "secuValidator", fallbackMethod = "verifyFallback")
+    @Retry(name = "secuValidator")
     public SecuVerificationResponse verify(String numeroSecuriteSociale, String nom,
                                             String prenom, LocalDate dateNaissance) {
         log.info("Vérification du numéro de sécurité sociale: {}****",
@@ -65,5 +69,26 @@ public class SecuValidatorClient {
                  response.isValid(), response.getMessage());
 
         return response;
+    }
+
+    /**
+     * Méthode de fallback appelée si le circuit est ouvert ou si toutes les tentatives échouent.
+     *
+     * IMPORTANT : En mode dégradé, on accepte la création mais on log un warning.
+     * Dans un cas réel, on pourrait mettre l'employé en statut "à vérifier".
+     */
+    public SecuVerificationResponse verifyFallback(String numeroSecuriteSociale, String nom,
+                                                    String prenom, LocalDate dateNaissance,
+                                                    Exception e) {
+        log.warn("FALLBACK: Service de vérification indisponible. " +
+                 "Numéro {} accepté sans vérification. Erreur: {}",
+                 numeroSecuriteSociale.substring(0, 5) + "****",
+                 e.getMessage());
+
+        return SecuVerificationResponse.builder()
+                .valid(true) // On accepte par défaut en mode dégradé
+                .message("Vérification non effectuée - Service indisponible (mode dégradé)")
+                .errorCode("FALLBACK_MODE")
+                .build();
     }
 }
