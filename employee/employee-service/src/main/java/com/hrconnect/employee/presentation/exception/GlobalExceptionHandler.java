@@ -1,5 +1,6 @@
 package com.hrconnect.employee.presentation.exception;
 
+import com.hrconnect.employee.infrastructure.external.SecuValidationException;
 import com.hrconnect.employee.presentation.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.warn("Illegal argument: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /**
+     * Gère les exceptions de validation du numéro de sécurité sociale
+     */
+    @ExceptionHandler(SecuValidationException.class)
+    public ResponseEntity<ErrorResponse> handleSecuValidationException(SecuValidationException ex) {
+        log.warn("Secu validation error [{}]: {}", ex.getErrorCode(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(new ErrorResponse(ex.getMessage()));

@@ -160,7 +160,7 @@ scenario_nominal() {
     local timestamp=$(date +%s)
     local random_suffix=$((RANDOM % 1000))
     # Générer un numéro de sécu unique (15 chiffres) : 1850575 (7 chiffres) + 8 chiffres uniques = 15
-    local secu_unique=$(printf "%08d" $((timestamp % 100000000)))
+    local secu_unique=$(printf "%08d" $((timestamp % 100000000)) | sed 's/000/123/g')
 
     local employee_data="{
         \"reference\": \"EMP-TEST-${timestamp}-${random_suffix}\",
@@ -443,15 +443,17 @@ scenario_dlq() {
     # Générer des identifiants uniques
     local timestamp=$(date +%s)
     local random_suffix=$((RANDOM % 1000))
-    # Générer un numéro de sécu unique (15 chiffres) : 2000320 (7 chiffres) + 8 chiffres uniques = 15
-    local secu_unique=$(printf "%08d" $((timestamp % 100000000)))
+    # Générer un numéro de sécu unique (15 chiffres) : 2851275 (7 chiffres) + 8 chiffres uniques = 15
+    # Note: éviter "000" dans le numéro car le mock WireMock le considère comme invalide
+    # On remplace les occurrences de "000" par "123" si présentes
+    local secu_suffix=$(printf "%08d" $((timestamp % 100000000)) | sed 's/000/123/g')
 
     local employee_data="{
         \"reference\": \"EMP-DLQ-${timestamp}-${random_suffix}\",
         \"nom\": \"Bob Sans-Tel\",
         \"prenom\": \"Bob\",
         \"email\": \"bob.sanstel.${timestamp}@company.com\",
-        \"numeroSecuriteSociale\": \"2000320${secu_unique}\",
+        \"numeroSecuriteSociale\": \"2851275${secu_suffix}\",
         \"role\": \"Stagiaire\",
         \"departement\": \"Marketing\",
         \"dateNaissance\": \"2000-03-20\",
