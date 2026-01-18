@@ -35,7 +35,8 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
-        spring.json.add.type.headers: false
+        # Activer les type headers avec le FQCN pour la désérialisation côté consumer
+        spring.json.add.type.headers: true
 
 server:
   port: 8081

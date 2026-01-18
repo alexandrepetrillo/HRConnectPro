@@ -50,8 +50,8 @@ public class KafkaConfig {
         Map<String, Object> props = commonConsumerConfigs();
 
         JsonDeserializer<EmployeeState> deserializer = new JsonDeserializer<>(EmployeeState.class);
-        deserializer.setRemoveTypeHeaders(true);
-        deserializer.addTrustedPackages("*");
+        // Utiliser les type headers avec FQCN envoyés par le producteur (approche standard)
+        deserializer.addTrustedPackages("com.hrconnect.employee.contract");
         deserializer.setUseTypeMapperForKey(false);
 
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
@@ -73,9 +73,10 @@ public class KafkaConfig {
         Map<String, Object> props = commonConsumerConfigs();
 
         JsonDeserializer<Map<String, Object>> deserializer = new JsonDeserializer<>((Class<Map<String, Object>>)(Class<?>)Map.class);
-        deserializer.setRemoveTypeHeaders(true);
+        // Pas de contrat partagé pour Leave, on ignore les headers et désérialise en Map
         deserializer.addTrustedPackages("*");
         deserializer.setUseTypeMapperForKey(false);
+        deserializer.ignoreTypeHeaders();
 
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
     }
@@ -95,8 +96,8 @@ public class KafkaConfig {
         Map<String, Object> props = commonConsumerConfigs();
 
         JsonDeserializer<InterviewState> deserializer = new JsonDeserializer<>(InterviewState.class);
-        deserializer.setRemoveTypeHeaders(true);
-        deserializer.addTrustedPackages("*");
+        // Utiliser les type headers avec FQCN envoyés par le producteur (approche standard)
+        deserializer.addTrustedPackages("com.hrconnect.interview.contract");
         deserializer.setUseTypeMapperForKey(false);
 
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);

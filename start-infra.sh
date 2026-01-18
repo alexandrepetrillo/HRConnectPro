@@ -48,7 +48,7 @@ fi
 # Vérifier Kafka
 echo ""
 echo "4️⃣  Vérification Kafka..."
-$DOCKER_COMPOSE exec -T kafka kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1
+$DOCKER_COMPOSE exec -T kafka kafka-broker-api-versions --bootstrap-server localhost:9093 > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "   ✅ Kafka est prêt"
 else

@@ -5,11 +5,14 @@ import com.hrconnect.interview.contract.InterviewState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.mapping.AbstractJavaTypeMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
@@ -25,6 +28,8 @@ public class OutboxPublisher {
     private static final String INTERVIEW_TOPIC = "interview.state";
     private static final int BATCH_SIZE = 100;
     private static final int MAX_RETRY = 5;
+    // FQCN pour le header __TypeId__ (standard avec contrat partagé)
+    private static final String INTERVIEW_STATE_TYPE = "com.hrconnect.interview.contract.InterviewState";
 
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, InterviewState> kafkaTemplate;
@@ -32,9 +37,9 @@ public class OutboxPublisher {
 
     /**
      * Publication périodique des événements non publiés
-     * Exécuté toutes les 5 secondes
+     * Exécuté toutes les secondes
      */
-    @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+    @Scheduled(fixedDelay = 1000, initialDelay = 1000)
     public void publishPendingEvents() {
         log.debug("Starting outbox publisher cycle");
 
@@ -68,12 +73,16 @@ public class OutboxPublisher {
             InterviewState.class
         );
 
-        // Créer le ProducerRecord
+        // Créer le ProducerRecord avec le header __TypeId__
         ProducerRecord<String, InterviewState> record = new ProducerRecord<>(
             INTERVIEW_TOPIC,
             outboxEvent.getAggregateId(),
             stateEvent
         );
+        record.headers().add(new RecordHeader(
+            AbstractJavaTypeMapper.DEFAULT_CLASSID_FIELD_NAME,
+            INTERVIEW_STATE_TYPE.getBytes(StandardCharsets.UTF_8)
+        ));
 
         // Publier sur Kafka (synchrone pour garantie)
         kafkaTemplate.send(record).get();

@@ -30,7 +30,9 @@ public class LeaveEventConsumer {
     )
     @Transactional
     public void consumeLeaveState(Map<String, Object> event) {
-        String leaveId = (String) event.get("id");
+        // L'id peut être un Integer ou un String selon la sérialisation
+        Object idObj = event.get("id");
+        String leaveId = idObj != null ? String.valueOf(idObj) : null;
         log.info("Réception événement leave.state: {}", leaveId);
 
         try {

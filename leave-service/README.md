@@ -120,7 +120,7 @@ cd leave-service
 mvn spring-boot:run
 ```
 
-Le service démarre sur **http://localhost:8082**
+Le service démarre sur **http://localhost:9082**
 
 ## 📡 API REST
 
@@ -133,7 +133,7 @@ Le service démarre sur **http://localhost:8082**
 | PUT | `/api/leaves/{id}` | Modifier un congé |
 | DELETE | `/api/leaves/{id}` | Supprimer un congé |
 
-**Documentation Swagger :** http://localhost:8082/swagger-ui.html
+**Documentation Swagger :** http://localhost:9082/swagger-ui.html
 
 ## 📊 Kafka
 
@@ -163,7 +163,7 @@ Le service démarre sur **http://localhost:8082**
 
 ## 🔧 Configuration
 
-**Port :** 8082  
+**Port :** 9082  
 **DB Schema :** leave  
 **Kafka Group ID :** leave-service
 

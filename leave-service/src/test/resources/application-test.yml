@@ -12,7 +12,7 @@ spring:
     bootstrap-servers: localhost:9093
 
 server:
-  port: 8082
+  port: 9082
 
 jwt:
   secret: hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256

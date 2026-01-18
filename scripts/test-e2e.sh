@@ -30,8 +30,8 @@ NC='\033[0m' # No Color
 
 # Configuration des services
 EMPLOYEE_URL="http://localhost:8081"
-LEAVE_URL="http://localhost:8082"
-INTERVIEW_URL="http://localhost:8083"
+LEAVE_URL="http://localhost:9082"
+INTERVIEW_URL="http://localhost:9083"
 PAYROLL_URL="http://localhost:8084"
 
 # Variables globales
@@ -71,8 +71,9 @@ print_info() {
 }
 
 wait_for_kafka() {
-    print_info "Attente de la propagation Kafka (3 secondes)..."
-    sleep 3
+    local seconds=${1:-6}
+    print_info "Attente de la propagation Kafka (${seconds} secondes)..."
+    sleep $seconds
 }
 
 check_service() {
@@ -155,9 +156,11 @@ scenario_nominal() {
     # --- Création employé ---
     print_step "2. Création d'un employé (avec téléphone)"
 
-    # Générer une référence unique
+    # Générer des identifiants uniques (timestamp + random pour éviter les collisions)
     local timestamp=$(date +%s)
     local random_suffix=$((RANDOM % 1000))
+    # Générer un numéro de sécu unique (15 chiffres) : 1850575 (7 chiffres) + 8 chiffres uniques = 15
+    local secu_unique=$(printf "%08d" $((timestamp % 100000000)))
 
     local employee_data="{
         \"reference\": \"EMP-TEST-${timestamp}-${random_suffix}\",
@@ -165,7 +168,7 @@ scenario_nominal() {
         \"prenom\": \"Jean\",
         \"email\": \"jean.dupont.${timestamp}@company.com\",
         \"telephone\": \"0612345678\",
-        \"numeroSecuriteSociale\": \"185057512345678\",
+        \"numeroSecuriteSociale\": \"1850575${secu_unique}\",
         \"role\": \"Développeur Senior\",
         \"departement\": \"IT\",
         \"dateNaissance\": \"1985-05-15\",
@@ -223,11 +226,22 @@ scenario_nominal() {
         -H "Content-Type: application/json" \
         -d "$leave_data")
 
-    local leave_ref=$(echo "$leave_response" | jq -r '.reference // .id // empty')
+    local leave_id=$(echo "$leave_response" | jq -r '.id // empty')
 
-    if [ -n "$leave_ref" ]; then
-        print_success "Congé créé: $leave_ref"
+    if [ -n "$leave_id" ]; then
+        print_success "Congé créé: $leave_id"
         echo "$leave_response" | jq '.'
+
+        # Approuver le congé pour qu'il soit pris en compte dans la paie
+        print_info "Approbation du congé..."
+        local approve_response=$(curl -s -X POST "${LEAVE_URL}/api/leaves/${leave_id}/approve" \
+            -H "Authorization: Bearer $TOKEN")
+        local leave_statut=$(echo "$approve_response" | jq -r '.statut // empty')
+        if [ "$leave_statut" = "VALIDE" ]; then
+            print_success "Congé approuvé (statut: VALIDE)"
+        else
+            print_warning "Approbation congé - réponse: $approve_response"
+        fi
     else
         print_warning "Création congé - réponse: $leave_response"
     fi
@@ -263,9 +277,16 @@ scenario_nominal() {
     print_step "6. Validation de l'entretien (statut VALIDE)"
 
     if [ -n "$interview_ref" ]; then
-        local validate_response=$(curl -s -X PUT "${INTERVIEW_URL}/api/interviews/${interview_ref}/validate" \
+        # D'abord passer l'entretien en statut REALISE (requis avant validation)
+        print_info "Passage de l'entretien en statut REALISE..."
+        curl -s -X PATCH "${INTERVIEW_URL}/api/interviews/${interview_ref}/status?status=REALISE" \
+            -H "Authorization: Bearer $TOKEN" > /dev/null
+
+        # Puis valider l'entretien avec l'augmentation de 3000€/an
+        local validate_response=$(curl -s -X POST "${INTERVIEW_URL}/api/interviews/${interview_ref}/validate" \
             -H "Authorization: Bearer $TOKEN" \
-            -H "Content-Type: application/json")
+            -H "Content-Type: application/json" \
+            -d '{"augmentationAccordee": 3000, "feedback": "Excellent travail cette année, augmentation de 3000€/an accordée"}')
 
         print_success "Entretien validé"
         echo "$validate_response" | jq '.' 2>/dev/null || echo "$validate_response"
@@ -282,18 +303,126 @@ scenario_nominal() {
     print_success "Fiche de paie générée"
     echo "$payslip" | jq '.'
 
-    # --- Résumé ---
+    # --- Contrôles fonctionnels ---
+    print_step "8. Vérification des calculs de la fiche de paie"
+
+    local test_passed=true
+
+    # Extraire les valeurs de la fiche de paie
+    local salaire_base=$(echo "$payslip" | jq -r '.salaireBase // 0')
+    local total_augmentations=$(echo "$payslip" | jq -r '.totalAugmentations // 0')
+    local salaire_actuel=$(echo "$payslip" | jq -r '.salaireActuel // 0')
+    local total_jours_css=$(echo "$payslip" | jq -r '.totalJoursCongesSansSolde // 0')
+    local deduction_css=$(echo "$payslip" | jq -r '.deductionCongesSansSolde // 0')
+    local salaire_brut_mensuel=$(echo "$payslip" | jq -r '.salaireBrutMensuel // 0')
+    local nb_augmentations=$(echo "$payslip" | jq -r '.augmentations | length')
+    local nb_conges=$(echo "$payslip" | jq -r '.congesSansSolde | length')
+
+    echo ""
+    echo -e "${CYAN}═══ Valeurs extraites ═══${NC}"
+    echo "  Salaire base:           $salaire_base €"
+    echo "  Total augmentations:    $total_augmentations €"
+    echo "  Salaire actuel:         $salaire_actuel €"
+    echo "  Jours congés sans solde: $total_jours_css"
+    echo "  Déduction CSS:          $deduction_css €"
+    echo "  Salaire brut mensuel:   $salaire_brut_mensuel €"
+    echo ""
+
+    # Contrôle 1: Salaire de base correct
+    echo -n "  ▶ Salaire de base = 48000 €: "
+    if [ "$salaire_base" = "48000" ] || [ "$salaire_base" = "48000.0" ]; then
+        echo -e "${GREEN}✓ OK${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (attendu: 48000, reçu: $salaire_base)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 2: Augmentation présente
+    echo -n "  ▶ Augmentation enregistrée (>0): "
+    if (( $(echo "$total_augmentations > 0" | bc -l) )); then
+        echo -e "${GREEN}✓ OK ($total_augmentations €)${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (attendu: >0, reçu: $total_augmentations)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 3: Au moins une augmentation dans la liste
+    echo -n "  ▶ Liste des augmentations non vide: "
+    if [ "$nb_augmentations" -gt 0 ]; then
+        echo -e "${GREEN}✓ OK ($nb_augmentations augmentation(s))${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (liste vide)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 4: Salaire actuel = base + augmentations
+    echo -n "  ▶ Salaire actuel = base + augmentations: "
+    local expected_salaire_actuel=$(echo "$salaire_base + $total_augmentations" | bc -l)
+    if (( $(echo "$salaire_actuel == $expected_salaire_actuel" | bc -l) )); then
+        echo -e "${GREEN}✓ OK${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (attendu: $expected_salaire_actuel, reçu: $salaire_actuel)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 5: Jours de congés sans solde = 2
+    echo -n "  ▶ Jours congés sans solde = 2: "
+    if [ "$total_jours_css" = "2" ]; then
+        echo -e "${GREEN}✓ OK${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (attendu: 2, reçu: $total_jours_css)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 6: Liste des congés non vide
+    echo -n "  ▶ Liste des congés sans solde non vide: "
+    if [ "$nb_conges" -gt 0 ]; then
+        echo -e "${GREEN}✓ OK ($nb_conges congé(s))${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (liste vide)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 7: Déduction CSS > 0
+    echo -n "  ▶ Déduction congés sans solde > 0: "
+    if (( $(echo "$deduction_css > 0" | bc -l) )); then
+        echo -e "${GREEN}✓ OK ($deduction_css €)${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (attendu: >0, reçu: $deduction_css)${NC}"
+        test_passed=false
+    fi
+
+    # Contrôle 8: Salaire brut mensuel cohérent
+    echo -n "  ▶ Salaire brut mensuel < salaire mensuel théorique: "
+    local salaire_mensuel_theorique=$(echo "$salaire_actuel / 12" | bc -l)
+    if (( $(echo "$salaire_brut_mensuel < $salaire_mensuel_theorique" | bc -l) )); then
+        echo -e "${GREEN}✓ OK (déduction appliquée)${NC}"
+    else
+        echo -e "${RED}✗ ERREUR (pas de déduction visible)${NC}"
+        test_passed=false
+    fi
+
+    echo ""
+
+    # --- Résumé final ---
     print_header "RÉSUMÉ DU SCÉNARIO NOMINAL"
     echo ""
-    echo -e "  Employé créé:        ${GREEN}$EMPLOYEE_REF${NC}"
-    echo -e "  Salaire de base:     ${GREEN}48 000 €/an${NC}"
-    echo -e "  Augmentation:        ${GREEN}+3 000 €/an${NC}"
-    echo -e "  Congé sans solde:    ${GREEN}2 jours${NC}"
+    if [ "$test_passed" = true ]; then
+        echo -e "  ${GREEN}════════════════════════════════════════${NC}"
+        echo -e "  ${GREEN}   ✓ TOUS LES CONTRÔLES SONT PASSÉS !   ${NC}"
+        echo -e "  ${GREEN}════════════════════════════════════════${NC}"
+    else
+        echo -e "  ${RED}════════════════════════════════════════${NC}"
+        echo -e "  ${RED}   ✗ CERTAINS CONTRÔLES ONT ÉCHOUÉ      ${NC}"
+        echo -e "  ${RED}════════════════════════════════════════${NC}"
+    fi
     echo ""
-    echo -e "  ${CYAN}Calcul attendu pour février 2026:${NC}"
-    echo -e "    Salaire mensuel: (48000 + 3000) / 12 = 4 250 €"
-    echo -e "    Déduction CSS:   2 jours × (4250/22) ≈ -386 €"
-    echo -e "    Net estimé:      ≈ 3 864 €"
+    echo -e "  Employé créé:        ${CYAN}$EMPLOYEE_REF${NC}"
+    echo -e "  Salaire de base:     ${CYAN}$salaire_base €/an${NC}"
+    echo -e "  Augmentation:        ${CYAN}+$total_augmentations €/an${NC}"
+    echo -e "  Congé sans solde:    ${CYAN}$total_jours_css jours${NC}"
+    echo -e "  Déduction CSS:       ${CYAN}-$deduction_css €${NC}"
+    echo -e "  Salaire brut:        ${CYAN}$salaire_brut_mensuel €${NC}"
     echo ""
 }
 
@@ -311,16 +440,18 @@ scenario_dlq() {
     # --- Création employé sans téléphone ---
     print_step "1. Création d'un employé SANS téléphone"
 
-    # Générer une référence unique
+    # Générer des identifiants uniques
     local timestamp=$(date +%s)
     local random_suffix=$((RANDOM % 1000))
+    # Générer un numéro de sécu unique (15 chiffres) : 2000320 (7 chiffres) + 8 chiffres uniques = 15
+    local secu_unique=$(printf "%08d" $((timestamp % 100000000)))
 
     local employee_data="{
         \"reference\": \"EMP-DLQ-${timestamp}-${random_suffix}\",
         \"nom\": \"Bob Sans-Tel\",
         \"prenom\": \"Bob\",
         \"email\": \"bob.sanstel.${timestamp}@company.com\",
-        \"numeroSecuriteSociale\": \"200032012345678\",
+        \"numeroSecuriteSociale\": \"2000320${secu_unique}\",
         \"role\": \"Stagiaire\",
         \"departement\": \"Marketing\",
         \"dateNaissance\": \"2000-03-20\",
@@ -403,11 +534,13 @@ scenario_multi() {
     print_header "SCÉNARIO MULTI-EMPLOYÉS : Création de plusieurs profils"
 
     local timestamp=$(date +%s)
+    # Générer des numéros de sécu uniques (15 chiffres chacun)
+    local secu_base=$((timestamp % 100000000))
 
     local employees=(
-        "{\"reference\":\"EMP-ALICE-${timestamp}\",\"nom\":\"Alice Martin\",\"email\":\"alice.${timestamp}@company.com\",\"telephone\":\"0611111111\",\"numeroSecuriteSociale\":\"290017512345678\",\"role\":\"Manager\",\"departement\":\"IT\",\"dateNaissance\":\"1990-01-15\",\"salaireAnnuelBase\":65000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2023-01-01\"}}"
-        "{\"reference\":\"EMP-CHARLIE-${timestamp}\",\"nom\":\"Charlie Brown\",\"email\":\"charlie.${timestamp}@company.com\",\"telephone\":\"0622222222\",\"numeroSecuriteSociale\":\"192067812345678\",\"role\":\"Designer\",\"departement\":\"Marketing\",\"dateNaissance\":\"1992-06-20\",\"salaireAnnuelBase\":42000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2024-06-01\"}}"
-        "{\"reference\":\"EMP-DIANA-${timestamp}\",\"nom\":\"Diana Prince\",\"email\":\"diana.${timestamp}@company.com\",\"telephone\":\"0633333333\",\"numeroSecuriteSociale\":\"288031212345678\",\"role\":\"Architecte\",\"departement\":\"IT\",\"dateNaissance\":\"1988-03-12\",\"salaireAnnuelBase\":72000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2022-03-15\"}}"
+        "{\"reference\":\"EMP-ALICE-${timestamp}\",\"nom\":\"Alice Martin\",\"prenom\":\"Alice\",\"email\":\"alice.${timestamp}@company.com\",\"telephone\":\"0611111111\",\"numeroSecuriteSociale\":\"2900175$(printf "%08d" $secu_base)\",\"role\":\"Manager\",\"departement\":\"IT\",\"dateNaissance\":\"1990-01-15\",\"salaireAnnuelBase\":65000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2023-01-01\"}}"
+        "{\"reference\":\"EMP-CHARLIE-${timestamp}\",\"nom\":\"Charlie Brown\",\"prenom\":\"Charlie\",\"email\":\"charlie.${timestamp}@company.com\",\"telephone\":\"0622222222\",\"numeroSecuriteSociale\":\"1920678$(printf "%08d" $((secu_base+1)))\",\"role\":\"Designer\",\"departement\":\"Marketing\",\"dateNaissance\":\"1992-06-20\",\"salaireAnnuelBase\":42000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2024-06-01\"}}"
+        "{\"reference\":\"EMP-DIANA-${timestamp}\",\"nom\":\"Diana Prince\",\"prenom\":\"Diana\",\"email\":\"diana.${timestamp}@company.com\",\"telephone\":\"0633333333\",\"numeroSecuriteSociale\":\"2880312$(printf "%08d" $((secu_base+2)))\",\"role\":\"Architecte\",\"departement\":\"IT\",\"dateNaissance\":\"1988-03-12\",\"salaireAnnuelBase\":72000,\"contrat\":{\"type\":\"CDI\",\"debut\":\"2022-03-15\"}}"
     )
 
     local created_refs=()

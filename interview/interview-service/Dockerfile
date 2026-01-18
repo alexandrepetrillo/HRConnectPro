@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY target/interview-service-*.jar app.jar
 
-EXPOSE 8083
+EXPOSE 9083
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

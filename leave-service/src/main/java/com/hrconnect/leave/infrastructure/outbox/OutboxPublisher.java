@@ -28,7 +28,8 @@ public class OutboxPublisher {
   private static final String LEAVE_TOPIC = "leave.state";
   private static final int BATCH_SIZE = 100;
   private static final int MAX_RETRY = 5;
-  public static final String LEAVE = "Leave";
+  // FQCN pour le header __TypeId__ (standard avec contrat partagé)
+  private static final String LEAVE_STATE_TYPE = "com.hrconnect.leave.infrastructure.event.LeaveState";
 
   private final OutboxEventRepository outboxEventRepository;
   private final KafkaTemplate<String, LeaveState> kafkaTemplate;
@@ -36,9 +37,9 @@ public class OutboxPublisher {
 
   /**
    * Publication périodique des événements non publiés
-   * Exécuté toutes les 5 secondes
+   * Exécuté toutes les secondes
    */
-  @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+  @Scheduled(fixedDelay = 1000, initialDelay = 1000)
   public void publishPendingEvents() {
     log.debug("Starting outbox publisher cycle");
 
@@ -80,7 +81,7 @@ public class OutboxPublisher {
     );
     record.headers().add(new RecordHeader(
       AbstractJavaTypeMapper.DEFAULT_CLASSID_FIELD_NAME,
-      LEAVE.getBytes(StandardCharsets.UTF_8)
+      LEAVE_STATE_TYPE.getBytes(StandardCharsets.UTF_8)
     ));
 
     // Publier sur Kafka avec employeeId comme clé pour le partitionnement

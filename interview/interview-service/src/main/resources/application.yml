@@ -35,17 +35,20 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
-        spring.json.add.type.headers: false
+        # Activer les type headers avec le FQCN pour la désérialisation côté consumer
+        spring.json.add.type.headers: true
     consumer:
       group-id: interview-service
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.hrconnect.*
+        spring.json.trusted.packages: com.hrconnect.employee.contract,com.hrconnect.interview.contract
+        # Utiliser les type headers envoyés par le producteur (approche standard avec contrat partagé)
+        spring.json.use.type.headers: true
 
 server:
-  port: 8083
+  port: 9083
 
 management:
   endpoints:

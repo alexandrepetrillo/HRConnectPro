@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -45,16 +46,21 @@ public class LeaveService {
         long joursPoses = ChronoUnit.DAYS.between(leave.getDateDebut(), leave.getDateFin()) + 1;
         leave.setJoursPoses((int) joursPoses);
 
-        // 4. Définir le statut par défaut si non renseigné
+        // 4. Calculer les jours travaillés et posés dans le mois (basé sur le mois de début)
+        int joursTravaillesMois = calculateWorkingDaysInMonth(leave.getDateDebut());
+        leave.setJoursTravaillesMois(joursTravaillesMois);
+        leave.setJoursPosesMois((int) joursPoses); // Simplifié : on considère tous les jours posés dans le même mois
+
+        // 5. Définir le statut par défaut si non renseigné
         if (leave.getStatut() == null) {
             leave.setStatut(LeaveStatus.EN_ATTENTE);
         }
 
-        // 5. Sauvegarder
+        // 6. Sauvegarder
         Leave savedLeave = leaveRepository.save(leave);
         log.info("Leave created with id: {}", savedLeave.getId());
 
-        // 6. Enregistrer dans l'Outbox (dans la même transaction)
+        // 7. Enregistrer dans l'Outbox (dans la même transaction)
         outboxService.saveLeaveState(savedLeave);
 
         return savedLeave;
@@ -216,6 +222,15 @@ public class LeaveService {
         if (leave.getDateDebut().isAfter(leave.getDateFin())) {
             throw new InvalidLeaveDatesException("Date de début doit être avant ou égale à la date de fin");
         }
+    }
+
+    /**
+     * Calcule le nombre de jours ouvrés dans le mois de la date donnée.
+     * Convention : 22 jours ouvrés par mois (moyenne standard).
+     */
+    private int calculateWorkingDaysInMonth(LocalDate date) {
+        // Convention standard : 22 jours ouvrés par mois
+        return 22;
     }
 
     // Exceptions personnalisées

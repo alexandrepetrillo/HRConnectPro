@@ -15,10 +15,10 @@ public interface LeaveSnapshotRepository extends JpaRepository<LeaveSnapshot, St
     List<LeaveSnapshot> findByEmployeeId(String employeeId);
 
     /**
-     * Récupère les congés sans solde approuvés pour un employé sur une période donnée
+     * Récupère les congés sans solde validés pour un employé sur une période donnée
      */
     @Query("SELECT l FROM LeaveSnapshot l WHERE l.employeeId = :employeeId " +
-           "AND l.type = 'SANS_SOLDE' AND l.statut = 'APPROUVE' " +
+           "AND l.type = 'SANS_SOLDE' AND l.statut = 'VALIDE' " +
            "AND l.dateDebut <= :periodEnd AND l.dateFin >= :periodStart")
     List<LeaveSnapshot> findCongesSansSoldeForPeriod(
             @Param("employeeId") String employeeId,

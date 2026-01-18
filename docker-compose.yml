@@ -20,7 +20,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - hrconnect-postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hrconnect -d hrconnect"]
@@ -49,12 +49,12 @@ services:
       - zookeeper
     ports:
       - "9093:9093"
-      - "29092:29092"
+      - "29093:29093"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29093,PLAINTEXT_HOST://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -84,7 +84,7 @@ services:
       - "389:389"
       - "636:636"
     volumes:
-      - ldap-data:/var/lib/ldap
+      - hrconnect-ldap-data:/var/lib/ldap
       - ./scripts/ldap-bootstrap:/home/ldif
     networks:
       - hrconnect-network
@@ -100,7 +100,7 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: hrconnect
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29093
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     networks:
       - hrconnect-network
@@ -114,7 +114,7 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
+      - hrconnect-prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -132,7 +132,7 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - grafana-data:/var/lib/grafana
+      - hrconnect-grafana-data:/var/lib/grafana
     networks:
       - hrconnect-network
 
@@ -165,11 +165,11 @@ services:
       - hrconnect-network
 
 volumes:
-  postgres-data:
-  prometheus-data:
-  grafana-data:
-  ldap-data:
-  ldap-config:
+  hrconnect-postgres-data:
+  hrconnect-prometheus-data:
+  hrconnect-grafana-data:
+  hrconnect-ldap-data:
+  hrconnect-ldap-config:
 
 networks:
   hrconnect-network:

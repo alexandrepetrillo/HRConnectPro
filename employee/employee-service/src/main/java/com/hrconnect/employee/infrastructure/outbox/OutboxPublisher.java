@@ -28,7 +28,8 @@ public class OutboxPublisher {
   private static final String EMPLOYEE_TOPIC = "employee.state";
   private static final int BATCH_SIZE = 100;
   private static final int MAX_RETRY = 5;
-  public static final String EMPLOYEE = "Employee";
+  // FQCN pour le header __TypeId__ (standard avec contrat partagé)
+  private static final String EMPLOYEE_STATE_TYPE = "com.hrconnect.employee.contract.EmployeeState";
 
   private final OutboxEventRepository outboxEventRepository;
   private final KafkaTemplate<String, EmployeeState> kafkaTemplate;
@@ -36,9 +37,9 @@ public class OutboxPublisher {
 
   /**
    * Publication périodique des événements non publiés
-   * Exécuté toutes les 5 secondes
+   * Exécuté toutes les secondes
    */
-  @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+  @Scheduled(fixedDelay = 1000, initialDelay = 1000)
   public void publishPendingEvents() {
     log.debug("Starting outbox publisher cycle");
 
@@ -80,7 +81,7 @@ public class OutboxPublisher {
     );
     record.headers().add(new RecordHeader(
       AbstractJavaTypeMapper.DEFAULT_CLASSID_FIELD_NAME,
-      EMPLOYEE.getBytes(StandardCharsets.UTF_8)
+      EMPLOYEE_STATE_TYPE.getBytes(StandardCharsets.UTF_8)
     ));
 
     // Publier sur Kafka

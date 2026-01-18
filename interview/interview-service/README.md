@@ -18,7 +18,7 @@ interview/
 
 ## Port
 
-- **8083** - API REST
+- **9083** - API REST
 
 ## Topics Kafka
 
@@ -48,4 +48,4 @@ mvn spring-boot:run
 
 ## Swagger UI
 
-http://localhost:8083/swagger-ui.html
+http://localhost:9083/swagger-ui.html
