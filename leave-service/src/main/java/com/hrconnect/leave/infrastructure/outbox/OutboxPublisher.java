@@ -4,15 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrconnect.leave.infrastructure.event.LeaveState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.mapping.AbstractJavaTypeMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
@@ -28,8 +24,6 @@ public class OutboxPublisher {
   private static final String LEAVE_TOPIC = "leave.state";
   private static final int BATCH_SIZE = 100;
   private static final int MAX_RETRY = 5;
-  // FQCN pour le header __TypeId__ (standard avec contrat partagé)
-  private static final String LEAVE_STATE_TYPE = "com.hrconnect.leave.infrastructure.event.LeaveState";
 
   private final OutboxEventRepository outboxEventRepository;
   private final KafkaTemplate<String, LeaveState> kafkaTemplate;
@@ -72,20 +66,9 @@ public class OutboxPublisher {
       LeaveState.class
     );
 
-    // Créer le ProducerRecord avec le header __TypeId__
-    ProducerRecord<String, LeaveState> record = new ProducerRecord<>(
-      LEAVE_TOPIC,
-      null,
-      state.getEmployeeId(),
-      state
-    );
-    record.headers().add(new RecordHeader(
-      AbstractJavaTypeMapper.DEFAULT_CLASSID_FIELD_NAME,
-      LEAVE_STATE_TYPE.getBytes(StandardCharsets.UTF_8)
-    ));
-
     // Publier sur Kafka avec employeeId comme clé pour le partitionnement
-    kafkaTemplate.send(record)
+    // Le header __TypeId__ est ajouté automatiquement grâce à spring.json.add.type.headers: true
+    kafkaTemplate.send(LEAVE_TOPIC, state.getEmployeeId(), state)
       .whenComplete((result, ex) -> {
         if (ex == null) {
           markAsPublished(outboxEvent);

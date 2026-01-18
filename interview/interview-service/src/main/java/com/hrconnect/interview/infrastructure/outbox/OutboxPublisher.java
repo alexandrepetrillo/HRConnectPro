@@ -4,15 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrconnect.interview.contract.InterviewState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.mapping.AbstractJavaTypeMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
@@ -28,8 +24,6 @@ public class OutboxPublisher {
     private static final String INTERVIEW_TOPIC = "interview.state";
     private static final int BATCH_SIZE = 100;
     private static final int MAX_RETRY = 5;
-    // FQCN pour le header __TypeId__ (standard avec contrat partagé)
-    private static final String INTERVIEW_STATE_TYPE = "com.hrconnect.interview.contract.InterviewState";
 
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, InterviewState> kafkaTemplate;
@@ -73,19 +67,9 @@ public class OutboxPublisher {
             InterviewState.class
         );
 
-        // Créer le ProducerRecord avec le header __TypeId__
-        ProducerRecord<String, InterviewState> record = new ProducerRecord<>(
-            INTERVIEW_TOPIC,
-            outboxEvent.getAggregateId(),
-            stateEvent
-        );
-        record.headers().add(new RecordHeader(
-            AbstractJavaTypeMapper.DEFAULT_CLASSID_FIELD_NAME,
-            INTERVIEW_STATE_TYPE.getBytes(StandardCharsets.UTF_8)
-        ));
-
-        // Publier sur Kafka (synchrone pour garantie)
-        kafkaTemplate.send(record).get();
+        // Publier sur Kafka - le header __TypeId__ est ajouté automatiquement
+        // grâce à spring.json.add.type.headers: true dans application.yml
+        kafkaTemplate.send(INTERVIEW_TOPIC, outboxEvent.getAggregateId(), stateEvent).get();
 
         // Marquer comme publié
         outboxEvent.setPublished(true);
