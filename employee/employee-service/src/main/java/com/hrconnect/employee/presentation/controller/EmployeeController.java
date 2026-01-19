@@ -11,6 +11,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,19 +21,40 @@ import java.util.stream.Collectors;
 
 /**
  * Contrôleur REST pour la gestion des employés
- * Nécessite le rôle HR ou ADMIN pour accéder à tous les endpoints
+ *
+ * Permissions :
+ * - ADMIN : Tout (lecture, création, modification, suppression)
+ * - MANAGER : Lecture, création, modification (PAS de suppression)
+ * - USER (ou autre) : Uniquement accès à ses propres informations via /me
  */
 @RestController
 @RequestMapping("/api/employees")
 @RequiredArgsConstructor
 @Tag(name = "Employees", description = "API de gestion des employés")
-@RolesAllowed({"HR", "ADMIN"})
 public class EmployeeController {
 
     private final EmployeeService employeeService;
     private final EmployeeMapper employeeMapper;
 
+    /**
+     * Récupérer ses propres informations (accessible à tous les utilisateurs authentifiés)
+     */
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Récupérer mes propres informations")
+    public ResponseEntity<EmployeeDTO> getMyInfo() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        // Recherche l'employé dont la référence correspond au username
+        return employeeService.getEmployeeById(username)
+            .map(employeeMapper::toDTO)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping
+    @RolesAllowed({"ADMIN", "MANAGER"})
     @Operation(summary = "Récupérer tous les employés")
     public ResponseEntity<List<EmployeeDTO>> getAllEmployees() {
         List<EmployeeDTO> employees = employeeService.getAllEmployees().stream()
@@ -40,6 +64,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{reference}")
+    @RolesAllowed({"ADMIN", "MANAGER"})
     @Operation(summary = "Récupérer un employé par sa référence")
     public ResponseEntity<EmployeeDTO> getEmployeeById(@PathVariable String reference) {
         return employeeService.getEmployeeById(reference)
@@ -49,6 +74,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/departement/{departement}")
+    @RolesAllowed({"ADMIN", "MANAGER"})
     @Operation(summary = "Récupérer les employés par département")
     public ResponseEntity<List<EmployeeDTO>> getEmployeesByDepartement(@PathVariable String departement) {
         List<EmployeeDTO> employees = employeeService.getEmployeesByDepartement(departement).stream()
@@ -58,6 +84,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/manager/{managerId}")
+    @RolesAllowed({"ADMIN", "MANAGER"})
     @Operation(summary = "Récupérer les employés par manager")
     public ResponseEntity<List<EmployeeDTO>> getEmployeesByManager(@PathVariable String managerId) {
         List<EmployeeDTO> employees = employeeService.getEmployeesByManager(managerId).stream()
@@ -67,6 +94,7 @@ public class EmployeeController {
     }
 
     @PostMapping
+    @RolesAllowed({"ADMIN", "MANAGER"})
     @Operation(summary = "Créer un nouvel employé")
     public ResponseEntity<EmployeeDTO> createEmployee(@Valid @RequestBody EmployeeDTO employeeDTO) {
         Employee employee = employeeMapper.toEntity(employeeDTO);
@@ -75,6 +103,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{reference}")
+    @RolesAllowed({"ADMIN", "MANAGER"})
     @Operation(summary = "Mettre à jour un employé")
     public ResponseEntity<EmployeeDTO> updateEmployee(
             @PathVariable String reference,
@@ -85,7 +114,8 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{reference}")
-    @Operation(summary = "Supprimer un employé")
+    @RolesAllowed("ADMIN")  // Seul ADMIN peut supprimer
+    @Operation(summary = "Supprimer un employé (ADMIN uniquement)")
     public ResponseEntity<Void> deleteEmployee(@PathVariable String reference) {
         employeeService.deleteEmployee(reference);
         return ResponseEntity.noContent().build();

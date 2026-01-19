@@ -8,84 +8,81 @@ objectClass: organizationalUnit
 ou: groups
 description: Groupes HRConnect
 
-dn: uid=admin,ou=users,dc=hrconnect,dc=local
+# Chuck Norris - ADMIN : peut tout faire
+dn: uid=chuck,ou=users,dc=hrconnect,dc=local
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
-uid: admin
-cn: Admin User
-sn: User
-givenName: Admin
-mail: admin@hrconnect.local
+uid: chuck
+cn: Chuck Norris
+sn: Norris
+givenName: Chuck
+mail: chuck.norris@hrconnect.local
 uidNumber: 10001
 gidNumber: 10001
-homeDirectory: /home/admin
+homeDirectory: /home/chuck
 loginShell: /bin/bash
+employeeNumber: chuck
+title: Directeur Général
+departmentNumber: Direction
 userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
 
-dn: uid=hruser,ou=users,dc=hrconnect,dc=local
+# Kevin Dupont - MANAGER : peut tout sauf supprimer
+dn: uid=kevin,ou=users,dc=hrconnect,dc=local
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
-uid: hruser
-cn: HR User
-sn: User
-givenName: HR
-mail: hr@hrconnect.local
+uid: kevin
+cn: Kevin Dupont
+sn: Dupont
+givenName: Kevin
+mail: kevin.dupont@hrconnect.local
 uidNumber: 10002
 gidNumber: 10002
-homeDirectory: /home/hruser
+homeDirectory: /home/kevin
 loginShell: /bin/bash
-userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
-
-dn: uid=manager,ou=users,dc=hrconnect,dc=local
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: shadowAccount
-uid: manager
-cn: Manager User
-sn: User
-givenName: Manager
-mail: manager@hrconnect.local
-uidNumber: 10003
-gidNumber: 10003
-homeDirectory: /home/manager
-loginShell: /bin/bash
-userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
-
-dn: uid=employee,ou=users,dc=hrconnect,dc=local
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: shadowAccount
-uid: employee
-cn: John Doe
-sn: Doe
-givenName: John
-mail: john.doe@hrconnect.local
-uidNumber: 10004
-gidNumber: 10004
-homeDirectory: /home/employee
-loginShell: /bin/bash
-employeeNumber: EMP001
-title: Software Developer
+employeeNumber: kevin
+title: Manager IT
 departmentNumber: IT
 userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
 
-dn: cn=admin,ou=groups,dc=hrconnect,dc=local
-objectClass: groupOfNames
-cn: admin
-description: Administrateurs HRConnect
-member: uid=admin,ou=users,dc=hrconnect,dc=local
+# Sophie Martin - USER : ne peut voir que ses propres infos
+dn: uid=sophie,ou=users,dc=hrconnect,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: sophie
+cn: Sophie Martin
+sn: Martin
+givenName: Sophie
+mail: sophie.martin@hrconnect.local
+uidNumber: 10003
+gidNumber: 10003
+homeDirectory: /home/sophie
+loginShell: /bin/bash
+employeeNumber: sophie
+title: Développeuse Junior
+departmentNumber: IT
+userPassword: {SSHA}kjCfZhWlZxDBc+O22DPzU1fQDEV4+uUh
 
-dn: cn=hr,ou=groups,dc=hrconnect,dc=local
+# Groupe ADMIN
+dn: cn=ADMIN,ou=groups,dc=hrconnect,dc=local
 objectClass: groupOfNames
-cn: hr
-description: Ressources Humaines
-member: uid=hruser,ou=users,dc=hrconnect,dc=local
+cn: ADMIN
+description: Administrateurs - Tous les droits
+member: uid=chuck,ou=users,dc=hrconnect,dc=local
 
-dn: cn=managers,ou=groups,dc=hrconnect,dc=local
+# Groupe MANAGER
+dn: cn=MANAGER,ou=groups,dc=hrconnect,dc=local
 objectClass: groupOfNames
-cn: managers
-description: Managers
-member: uid=manager,ou=users,dc=hrconnect,dc=local
+cn: MANAGER
+description: Managers - Tout sauf suppression
+member: uid=kevin,ou=users,dc=hrconnect,dc=local
+
+# Groupe USER (rôle minimal)
+dn: cn=USER,ou=groups,dc=hrconnect,dc=local
+objectClass: groupOfNames
+cn: USER
+description: Utilisateurs - Accès limité
+member: uid=sophie,ou=users,dc=hrconnect,dc=local
 

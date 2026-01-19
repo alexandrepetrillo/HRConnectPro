@@ -109,7 +109,7 @@ authenticate() {
 
     local response=$(curl -s -X POST "${EMPLOYEE_URL}/api/auth/login" \
         -H "Content-Type: application/json" \
-        -d '{"username":"admin","password":"password"}')
+        -d '{"username":"chuck","password":"password"}')
 
     TOKEN=$(echo "$response" | jq -r '.token // empty')
 

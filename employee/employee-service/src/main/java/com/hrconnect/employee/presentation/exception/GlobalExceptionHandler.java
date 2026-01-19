@@ -5,6 +5,7 @@ import com.hrconnect.employee.presentation.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -55,6 +56,18 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    /**
+     * Gère les exceptions d'accès refusé (403 Forbidden)
+     * Levée par Spring Security quand l'utilisateur n'a pas les droits requis
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(new ErrorResponse("Access denied: insufficient permissions"));
     }
 
     /**

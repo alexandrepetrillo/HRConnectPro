@@ -6,29 +6,41 @@
 
 Ces utilisateurs sont définis dans `SecurityConfig.java` et **actifs par défaut** (quand LDAP est désactivé).
 
-| Username | Mot de passe | Rôle(s) | Accès |
-|----------|--------------|---------|-------|
-| **hr_user** | **password** | HR | Gestion des employés |
-| **admin** | **admin** | ADMIN, HR | Tous les accès + actuators |
+| Username | Mot de passe | Rôle(s) | Permissions |
+|----------|--------------|---------|-------------|
+| **chuck** | **password** | ADMIN | Tout (lecture, création, modification, **suppression**) |
+| **kevin** | **password** | MANAGER | Lecture, création, modification (PAS de suppression) |
+| **sophie** | **password** | USER | Uniquement `/api/employees/me` |
 
-**Fichier source** : `/employee-service/src/main/java/com/hrconnect/employee/infrastructure/security/SecurityConfig.java` (lignes 75-82)
+**Fichier source** : `/employee-service/src/main/java/com/hrconnect/employee/infrastructure/security/SecurityConfig.java`
+
+**Note** : Ces 3 utilisateurs sont également créés comme employés en base de données (migration V005), ce qui permet à l'endpoint `/api/employees/me` de fonctionner.
+
+#### Tableau des permissions
+
+| Endpoint | ADMIN (chuck) | MANAGER (kevin) | USER (sophie) |
+|----------|:-------------:|:---------------:|:-------------:|
+| `GET /api/employees/me` | ✅ | ✅ | ✅ |
+| `GET /api/employees` | ✅ | ✅ | ❌ |
+| `POST /api/employees` | ✅ | ✅ | ❌ |
+| `PUT /api/employees/{id}` | ✅ | ✅ | ❌ |
+| `DELETE /api/employees/{id}` | ✅ | ❌ | ❌ |
 
 ---
 
 ### 🌐 Utilisateurs LDAP
 
-Ces utilisateurs sont définis dans `scripts/init-ldap.ldif` et disponibles **dès que le conteneur LDAP démarre** (import automatique).
+Ces utilisateurs sont définis dans `scripts/ldap-bootstrap/50-init-ldap.ldif` et disponibles **dès que le conteneur LDAP démarre** (import automatique).
 
-| Username | Mot de passe | DN | Groupes |
-|----------|--------------|-----|---------|
-| **admin** | **password** | uid=admin,ou=users,dc=hrconnect,dc=local | admins |
-| **hruser** | **password** | uid=hruser,ou=users,dc=hrconnect,dc=local | hr |
-| **manager** | **password** | uid=manager,ou=users,dc=hrconnect,dc=local | managers |
-| **employee** | **password** | uid=employee,ou=users,dc=hrconnect,dc=local | - |
+| Username | Mot de passe | Rôle | Permissions |
+|----------|--------------|------|-------------|
+| **chuck** | **password** | ADMIN | Tout (lecture, création, modification, **suppression**) |
+| **kevin** | **password** | MANAGER | Lecture, création, modification (PAS de suppression) |
+| **sophie** | **password** | USER | Uniquement `/api/employees/me` |
 
-**Fichier source** : `/scripts/init-ldap.ldif`
+**Fichier source** : `/scripts/ldap-bootstrap/50-init-ldap.ldif`
 
-**Note** : Le mot de passe LDAP est encodé en SSHA dans le fichier LDIF, mais le mot de passe en clair est **"password"** pour tous les utilisateurs.
+**Note** : Le mot de passe LDAP est encodé en SSHA dans le fichier LDIF. Le mot de passe en clair est **"password"** pour tous les utilisateurs.
 
 ---
 
@@ -52,19 +64,20 @@ Dans `employee-service/src/main/resources/application.yml` :
 
 ```yaml
 ldap:
-  enabled: false  # false = In-Memory, true = LDAP
+  enabled: true  # true = LDAP (défaut), false = In-Memory
 ```
 
-### Mode In-Memory (par défaut)
+### Mode LDAP (par défaut)
 
 **Utilisateurs disponibles** :
-- `hr_user` / `password` (rôle HR)
-- `admin` / `admin` (rôles ADMIN, HR)
+- `chuck` / `password` (rôle ADMIN)
+- `kevin` / `password` (rôle MANAGER)
+- `sophie` / `password` (rôle USER)
 
 **Connexion Swagger** :
 ```json
 {
-  "username": "hr_user",
+  "username": "chuck",
   "password": "password"
 }
 ```

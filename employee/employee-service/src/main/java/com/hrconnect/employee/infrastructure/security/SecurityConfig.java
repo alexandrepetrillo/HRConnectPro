@@ -160,14 +160,22 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
 
-        manager.createUser(User.withUsername("hr_user")
+        // Chuck Norris - ADMIN : peut tout faire
+        manager.createUser(User.withUsername("chuck")
             .password(passwordEncoder().encode("password"))
-            .roles("HR")
+            .roles("ADMIN")
             .build());
 
-        manager.createUser(User.withUsername("admin")
-            .password(passwordEncoder().encode("admin"))
-            .roles("ADMIN", "HR")
+        // Kevin - MANAGER : peut tout faire sauf supprimer
+        manager.createUser(User.withUsername("kevin")
+            .password(passwordEncoder().encode("password"))
+            .roles("MANAGER")
+            .build());
+
+        // Sophie - USER : ne peut voir que ses propres infos via /me
+        manager.createUser(User.withUsername("sophie")
+            .password(passwordEncoder().encode("password"))
+            .authorities("ROLE_USER")  // Rôle minimal pour être authentifié
             .build());
 
         return manager;
