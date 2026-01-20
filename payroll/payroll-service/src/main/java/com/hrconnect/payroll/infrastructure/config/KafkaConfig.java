@@ -2,26 +2,22 @@ package com.hrconnect.payroll.infrastructure.config;
 
 import com.hrconnect.employee.contract.EmployeeState;
 import com.hrconnect.interview.contract.InterviewState;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import com.hrconnect.leave.contract.LeaveState;
+import com.hrconnect.socle.kafka.KafkaConsumerFactoryBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Configuration Kafka pour Payroll-Service.
+ * Utilise les builders du socle pour une configuration standardisée.
  *
  * Ce service consomme 3 topics différents :
  * - employee.state (EmployeeState)
- * - leave.state (Map<String, Object> car LeaveState n'est pas dans un contract)
+ * - leave.state (LeaveState)
  * - interview.state (InterviewState)
  */
 @Configuration
@@ -34,80 +30,51 @@ public class KafkaConfig {
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
 
-    private Map<String, Object> commonConsumerConfigs() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        return props;
-    }
-
     // === Employee Consumer ===
 
     @Bean
     public ConsumerFactory<String, EmployeeState> employeeConsumerFactory() {
-        Map<String, Object> props = commonConsumerConfigs();
-
-        JsonDeserializer<EmployeeState> deserializer = new JsonDeserializer<>(EmployeeState.class);
-        // Utiliser les type headers avec FQCN envoyés par le producteur (approche standard)
-        deserializer.addTrustedPackages("com.hrconnect.employee.contract");
-        deserializer.setUseTypeMapperForKey(false);
-
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+        return KafkaConsumerFactoryBuilder.create(EmployeeState.class)
+            .bootstrapServers(bootstrapServers)
+            .groupId(groupId)
+            .trustedPackages("com.hrconnect.*")
+            .build();
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, EmployeeState> employeeKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, EmployeeState> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(employeeConsumerFactory());
-        return factory;
+        return KafkaConsumerFactoryBuilder.listenerFactory(employeeConsumerFactory());
     }
 
-    // === Leave Consumer (Map car pas de contract partagé) ===
+    // === Leave Consumer ===
 
     @Bean
-    @SuppressWarnings("unchecked")
-    public ConsumerFactory<String, Map<String, Object>> leaveConsumerFactory() {
-        Map<String, Object> props = commonConsumerConfigs();
-
-        JsonDeserializer<Map<String, Object>> deserializer = new JsonDeserializer<>((Class<Map<String, Object>>)(Class<?>)Map.class);
-        // Pas de contrat partagé pour Leave, on ignore les headers et désérialise en Map
-        deserializer.addTrustedPackages("*");
-        deserializer.setUseTypeMapperForKey(false);
-        deserializer.ignoreTypeHeaders();
-
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+    public ConsumerFactory<String, LeaveState> leaveConsumerFactory() {
+        return KafkaConsumerFactoryBuilder.create(LeaveState.class)
+            .bootstrapServers(bootstrapServers)
+            .groupId(groupId)
+            .trustedPackages("com.hrconnect.*")
+            .build();
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> leaveKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(leaveConsumerFactory());
-        return factory;
+    public ConcurrentKafkaListenerContainerFactory<String, LeaveState> leaveKafkaListenerContainerFactory() {
+        return KafkaConsumerFactoryBuilder.listenerFactory(leaveConsumerFactory());
     }
 
     // === Interview Consumer ===
 
     @Bean
     public ConsumerFactory<String, InterviewState> interviewConsumerFactory() {
-        Map<String, Object> props = commonConsumerConfigs();
-
-        JsonDeserializer<InterviewState> deserializer = new JsonDeserializer<>(InterviewState.class);
-        // Utiliser les type headers avec FQCN envoyés par le producteur (approche standard)
-        deserializer.addTrustedPackages("com.hrconnect.interview.contract");
-        deserializer.setUseTypeMapperForKey(false);
-
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+        return KafkaConsumerFactoryBuilder.create(InterviewState.class)
+            .bootstrapServers(bootstrapServers)
+            .groupId(groupId)
+            .trustedPackages("com.hrconnect.*")
+            .build();
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, InterviewState> interviewKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, InterviewState> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(interviewConsumerFactory());
-        return factory;
+        return KafkaConsumerFactoryBuilder.listenerFactory(interviewConsumerFactory());
     }
 }

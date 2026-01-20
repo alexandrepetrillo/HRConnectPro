@@ -7,7 +7,7 @@
 
     <parent>
         <groupId>com.hrconnect</groupId>
-        <artifactId>hrconnectpro-root</artifactId>
+        <artifactId>leave</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -19,6 +19,13 @@
     <description>Microservice de gestion des congés</description>
 
     <dependencies>
+        <!-- Leave Contract (DTOs partagés) -->
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>leave-contract</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!--
             =====================================================
             SOCLE TECHNIQUE

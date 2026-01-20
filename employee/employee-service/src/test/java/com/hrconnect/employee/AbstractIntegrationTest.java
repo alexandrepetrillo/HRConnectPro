@@ -32,9 +32,10 @@ public abstract class AbstractIntegrationTest {
   static {
     // Charge docker-compose.test.yml qui contient la configuration complète pour les tests
     // avec ports dynamiques pour éviter les conflits avec l'environnement de dev local
-    environment = new DockerComposeContainer<>(new File("../docker-compose.test.yml"))
+    // Le chemin est relatif à la racine du projet (où Maven exécute les tests)
+    environment = new DockerComposeContainer<>(new File("../../docker-compose.test.yml"))
       .withExposedService("postgres", 5432)
-      .withExposedService("kafka", 9092)
+      .withExposedService("kafka", 9093)
       .withExposedService("ldap", 389);
     environment.start();
   }
@@ -53,8 +54,8 @@ public abstract class AbstractIntegrationTest {
       () -> String.format("jdbc:postgresql://%s:%d/hrconnect?currentSchema=employee", postgresHost, postgresPort));
 
     // Kafka : récupère le port dynamique et configure le bootstrap server
-    String kafkaHost = environment.getServiceHost("kafka", 9092);
-    Integer kafkaPort = environment.getServicePort("kafka", 9092);
+    String kafkaHost = environment.getServiceHost("kafka", 9093);
+    Integer kafkaPort = environment.getServicePort("kafka", 9093);
     registry.add("spring.kafka.bootstrap-servers",
       () -> String.format("%s:%d", kafkaHost, kafkaPort));
 
@@ -81,10 +82,21 @@ public abstract class AbstractIntegrationTest {
 
   // ==================== Utilisateurs de test (définis dans SecurityConfig) ====================
 
-  protected static final String HR_USER = "hr_user";
-  protected static final String HR_PASSWORD = "password";
-  protected static final String ADMIN_USER = "admin";
-  protected static final String ADMIN_PASSWORD = "admin";
+  // Chuck Norris - ADMIN : peut tout faire
+  protected static final String ADMIN_USER = "chuck";
+  protected static final String ADMIN_PASSWORD = "password";
+
+  // Kevin - MANAGER : peut tout faire sauf supprimer
+  protected static final String MANAGER_USER = "kevin";
+  protected static final String MANAGER_PASSWORD = "password";
+
+  // Sophie - USER : ne peut voir que ses propres infos via /me
+  protected static final String USER = "sophie";
+  protected static final String USER_PASSWORD = "password";
+
+  // Alias pour compatibilité (HR = MANAGER dans ce contexte)
+  protected static final String HR_USER = MANAGER_USER;
+  protected static final String HR_PASSWORD = MANAGER_PASSWORD;
 
   // ==================== Setup ====================
 
@@ -96,10 +108,10 @@ public abstract class AbstractIntegrationTest {
   // ==================== Méthodes utilitaires ====================
 
   /**
-   * Crée des headers HTTP avec un token JWT pour un utilisateur avec le rôle HR.
+   * Crée des headers HTTP avec un token JWT pour un utilisateur avec le rôle MANAGER (anciennement HR).
    */
   protected HttpHeaders createHrAuthHeaders() {
-    return createAuthHeadersWithRole("ROLE_HR");
+    return createAuthHeadersWithRole("ROLE_MANAGER");
   }
 
   /**

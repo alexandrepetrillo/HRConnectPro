@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,8 +25,11 @@ import java.util.stream.Collectors;
  * Composant transverse utilisé par tous les microservices sécurisés.
  *
  * Extrait le token JWT du header Authorization et configure le SecurityContext.
+ *
+ * Note: Ce bean n'est créé que si Spring Security est dans le classpath.
  */
 @Component
+@ConditionalOnClass(name = "org.springframework.security.core.Authentication")
 @RequiredArgsConstructor
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {

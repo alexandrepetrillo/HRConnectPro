@@ -2,6 +2,7 @@ package com.hrconnect.employee;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -14,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * - Pattern Outbox pour garantir la cohérence transactionnelle
  */
 @SpringBootApplication
+@ComponentScan(basePackages = {"com.hrconnect.employee", "com.hrconnect.socle"})
 @EnableKafka
 @EnableScheduling
 public class EmployeeServiceApplication {

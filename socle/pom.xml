@@ -141,6 +141,31 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- ================================================== -->
+        <!--              OUTBOX PATTERN (OPTIONNEL)             -->
+        <!-- ================================================== -->
+
+        <!-- JPA pour l'entité Outbox -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Kafka pour la publication des événements -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Jackson pour la sérialisation JSON -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>

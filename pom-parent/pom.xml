@@ -188,6 +188,12 @@
 
             <dependency>
                 <groupId>com.hrconnect</groupId>
+                <artifactId>leave-contract</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.hrconnect</groupId>
                 <artifactId>payroll-contract</artifactId>
                 <version>${project.version}</version>
             </dependency>

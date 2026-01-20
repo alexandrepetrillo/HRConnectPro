@@ -27,7 +27,10 @@ class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
         // Given
         EmployeeDTO employeeDTO = EmployeeDTO.builder()
             .reference("E001")
-            .nom("Alice Dupont")
+            .nom("Dupont")
+            .prenom("Alice")
+            .numeroSecuriteSociale("185057512345678")
+            .dateNaissance(LocalDate.of(1985, 5, 15))
             .email("alice.dupont@company.com")
             .telephone("+33123456789")
             .role("Manager")
@@ -53,11 +56,13 @@ class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getReference()).isEqualTo("E001");
-        assertThat(response.getBody().getNom()).isEqualTo("Alice Dupont");
+        assertThat(response.getBody().getNom()).isEqualTo("Dupont");
+        assertThat(response.getBody().getPrenom()).isEqualTo("Alice");
 
         // Vérifier en base
         Employee saved = employeeRepository.findByReference("E001").orElseThrow();
-        assertThat(saved.getNom()).isEqualTo("Alice Dupont");
+        assertThat(saved.getNom()).isEqualTo("Dupont");
+        assertThat(saved.getPrenom()).isEqualTo("Alice");
     }
 
     @Test
@@ -65,7 +70,10 @@ class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
         // Given
         Employee employee = Employee.builder()
             .reference("E002")
-            .nom("Bob Martin")
+            .nom("Martin")
+            .prenom("Bob")
+            .numeroSecuriteSociale("190017512345789")
+            .dateNaissance(LocalDate.of(1990, 1, 15))
             .email("bob.martin@company.com")
             .role("Developer")
             .departement("IT")
@@ -91,7 +99,8 @@ class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getReference()).isEqualTo("E002");
-        assertThat(response.getBody().getNom()).isEqualTo("Bob Martin");
+        assertThat(response.getBody().getNom()).isEqualTo("Martin");
+        assertThat(response.getBody().getPrenom()).isEqualTo("Bob");
     }
 
     @Test

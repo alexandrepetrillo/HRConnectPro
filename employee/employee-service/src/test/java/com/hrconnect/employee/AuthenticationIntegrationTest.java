@@ -38,7 +38,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getToken()).isNotBlank();
         assertThat(response.getBody().getUsername()).isEqualTo(HR_USER);
-        assertThat(response.getBody().getRoles()).contains("ROLE_HR");
+        assertThat(response.getBody().getRoles()).contains("ROLE_MANAGER");
     }
 
     @Test
@@ -84,7 +84,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldValidateGeneratedToken() {
         // Given - Génération d'un token
-        String token = generateTokenWithRole("testuser", "ROLE_HR");
+        String token = generateTokenWithRole("testuser", "ROLE_MANAGER");
 
         // When
         boolean isValid = jwtTokenProvider.validateToken(token);
@@ -94,7 +94,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         // Then
         assertThat(isValid).isTrue();
         assertThat(username).isEqualTo("testuser");
-        assertThat(roles).contains("ROLE_HR");
+        assertThat(roles).contains("ROLE_MANAGER");
     }
 
     @Test
@@ -125,8 +125,8 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldReturnCurrentUserInfo() {
-        // Given - Token valide avec rôle HR
-        String token = generateTokenWithRole("hr.user", "ROLE_HR");
+        // Given - Token valide avec rôle MANAGER
+        String token = generateTokenWithRole("manager.user", "ROLE_MANAGER");
 
         HttpEntity<Void> request = new HttpEntity<>(createHeadersWithToken(token));
 
@@ -141,8 +141,8 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getUsername()).isEqualTo("hr.user");
-        assertThat(response.getBody().getRoles()).contains("ROLE_HR");
+        assertThat(response.getBody().getUsername()).isEqualTo("manager.user");
+        assertThat(response.getBody().getRoles()).contains("ROLE_MANAGER");
     }
 
     @Test

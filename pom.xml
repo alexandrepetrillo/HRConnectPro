@@ -38,7 +38,7 @@
         <!-- Modules métier -->
         <module>employee</module>
         <module>interview</module>
-        <module>leave-service</module>
+        <module>leave</module>
         <module>payroll</module>
     </modules>
 

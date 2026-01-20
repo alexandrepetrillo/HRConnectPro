@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -17,8 +18,11 @@ import java.util.stream.Collectors;
 /**
  * Provider pour la génération et validation des tokens JWT.
  * Composant transverse utilisé par tous les microservices sécurisés.
+ *
+ * Note: Ce bean n'est créé que si Spring Security est dans le classpath.
  */
 @Component
+@ConditionalOnClass(name = "org.springframework.security.core.Authentication")
 @Slf4j
 public class JwtTokenProvider {
 

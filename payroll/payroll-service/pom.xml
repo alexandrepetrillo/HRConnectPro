@@ -39,6 +39,19 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>leave-contract</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Socle technique commun -->
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>socle</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

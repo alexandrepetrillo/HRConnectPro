@@ -1,4 +1,4 @@
-package com.hrconnect.leave.infrastructure.event;
+package com.hrconnect.leave.contract;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 /**
- * Événement snapshot Leave publié sur Kafka (topic: leave.state)
+ * Événement snapshot Leave publié sur Kafka (topic: leave.state).
+ * Ce DTO est partagé avec les autres microservices qui consomment les événements Leave.
  */
 @Data
 @Builder
@@ -27,4 +28,3 @@ public class LeaveState {
     private Integer joursPosesMois;
     private String commentaire;
 }
-
