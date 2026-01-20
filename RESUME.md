@@ -111,12 +111,14 @@ HRConnectPro/
 │       └── OpenAPI/Swagger
 ├── interview/                ✅ Multi-module Maven
 │   ├── interview-contract/   ✅ DTOs partagés (InterviewState)
-│   └── interview-service/    ✅ Opérationnel (port 8083)
+│   └── interview-service/    ✅ Opérationnel (port 9083)
 │       ├── REST API CRUD
 │       ├── Kafka Consumer (employee.state)
 │       ├── Kafka Producer (interview.state) + Outbox
 │       └── OpenAPI/Swagger
-├── leave-service/            ✅ Opérationnel (port 8082)
+├── leave/                    ✅ Multi-module Maven
+│   ├── leave-contract/       ✅ DTOs partagés (LeaveState)
+│   └── leave-service/        ✅ Opérationnel (port 9082)
 │   ├── REST API CRUD
 │   ├── Kafka Consumer (employee.state)
 │   ├── Kafka Producer (leave.state) + Outbox
@@ -196,9 +198,9 @@ mvn clean install -DskipTests
 
 # 3. Lancer les services (dans des terminaux séparés)
 cd employee/employee-service && mvn spring-boot:run   # port 8081
-cd leave-service && mvn spring-boot:run               # port 8082
-cd interview/interview-service && mvn spring-boot:run # port 8083
-cd payroll-service && mvn spring-boot:run             # port 8084
+cd leave/leave-service && mvn spring-boot:run         # port 9082
+cd interview/interview-service && mvn spring-boot:run # port 9083
+cd payroll/payroll-service && mvn spring-boot:run     # port 8084
 ```
 
 ### URLs utiles
@@ -207,10 +209,10 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 |---------|-----|
 | Employee API | http://localhost:8081/api/employees |
 | Employee Swagger | http://localhost:8081/swagger-ui.html |
-| Leave API | http://localhost:8082/api/leaves |
-| Leave Swagger | http://localhost:8082/swagger-ui.html |
-| Interview API | http://localhost:8083/api/interviews |
-| Interview Swagger | http://localhost:8083/swagger-ui.html |
+| Leave API | http://localhost:9082/api/leaves |
+| Leave Swagger | http://localhost:9082/swagger-ui.html |
+| Interview API | http://localhost:9083/api/interviews |
+| Interview Swagger | http://localhost:9083/swagger-ui.html |
 | **Payroll API** | http://localhost:8084/api/payroll |
 | **Payroll Swagger** | http://localhost:8084/swagger-ui.html |
 | Kafka UI | http://localhost:8080 |
@@ -218,12 +220,29 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 
 ---
 
-## ⏳ Jour 3 - EN COURS (60%)
+## ⏳ Jour 3 - EN COURS (70%)
 
 | TP | Statut | Description |
 |----|--------|-------------|
-| TP8 | ⏳ | Observabilité (dashboards Grafana, tracing Jaeger) |
+| TP8 | ✅ | Observabilité : **Grafana dashboard + Prometheus** |
 | TP9 | ✅ | Résilience : **Resilience4j + DLQ Kafka** |
+
+### Grafana & Prometheus - Implémenté ✅
+
+**Fonctionnalités :**
+- ✅ **Prometheus** scrape les 4 microservices
+- ✅ **Grafana** avec datasource auto-configurée
+- ✅ **Dashboard HRConnect** provisionné automatiquement (5 panels)
+- ✅ Script de démo `./scripts/demo-grafana.sh`
+
+**Dashboard inclut :**
+- Requêtes HTTP/sec par service
+- Latence P95 par service
+- Mémoire JVM Heap
+- État des services (UP/DOWN)
+- Requêtes par endpoint
+
+**Documentation** : `monitoring/README-GRAFANA.md`
 
 ### Resilience4j - Implémenté ✅
 
@@ -255,7 +274,6 @@ cd payroll-service && mvn spring-boot:run             # port 8084
 
 ### À faire
 
-- ⏳ Dashboards Grafana personnalisés
 - ⏳ Tracing distribué (Jaeger)
 
 ---

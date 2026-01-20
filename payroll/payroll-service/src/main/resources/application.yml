@@ -51,9 +51,11 @@ management:
   endpoint:
     health:
       show-details: always
-  prometheus:
-    metrics:
-      export:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
         enabled: true
 
 # OpenAPI / Swagger

@@ -10,3 +10,23 @@ scrape_configs:
         labels:
           application: 'employee-service'
 
+  - job_name: 'leave-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:9082']
+        labels:
+          application: 'leave-service'
+
+  - job_name: 'interview-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:9083']
+        labels:
+          application: 'interview-service'
+
+  - job_name: 'payroll-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8084']
+        labels:
+          application: 'payroll-service'

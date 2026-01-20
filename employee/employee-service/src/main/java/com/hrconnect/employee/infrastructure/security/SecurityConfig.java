@@ -68,7 +68,7 @@ public class SecurityConfig {
                 // Endpoints publics (doivent être déclarés ici car avant le filtre JWT)
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/api-docs/**").permitAll()
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                 // Actuator complet nécessite ADMIN
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // Tout le reste est géré par les annotations @PreAuthorize sur les contrôleurs
