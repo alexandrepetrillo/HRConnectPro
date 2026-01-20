@@ -4,8 +4,11 @@ import com.hrconnect.socle.security.JwtTokenProvider;
 import com.hrconnect.employee.presentation.dto.AuthErrorResponse;
 import com.hrconnect.employee.presentation.dto.JwtResponse;
 import com.hrconnect.employee.presentation.dto.LoginRequest;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,23 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
+    private final MeterRegistry meterRegistry;
+
+    private Counter authSuccessCounter;
+    private Counter authFailureCounter;
+
+    @PostConstruct
+    public void initMetrics() {
+        authSuccessCounter = Counter.builder("auth_login_total")
+                .tag("result", "success")
+                .description("Nombre total d'authentifications réussies")
+                .register(meterRegistry);
+
+        authFailureCounter = Counter.builder("auth_login_total")
+                .tag("result", "failure")
+                .description("Nombre total d'authentifications échouées")
+                .register(meterRegistry);
+    }
 
     @PostMapping("/login")
     @PermitAll
@@ -64,6 +84,9 @@ public class AuthController {
 
             log.info("User {} authenticated successfully with roles: {}", loginRequest.getUsername(), roles);
 
+            // Incrémenter le compteur de succès
+            authSuccessCounter.increment();
+
             return ResponseEntity.ok(JwtResponse.builder()
                 .token(jwt)
                 .username(authentication.getName())
@@ -73,11 +96,13 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             // Échec d'authentification - credentials invalides
             log.warn("Authentication failed for user {}: Invalid credentials", loginRequest.getUsername());
+            authFailureCounter.increment();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new AuthErrorResponse("Invalid username or password"));
         } catch (AuthenticationException e) {
             // Toute autre erreur d'authentification Spring Security
             log.warn("Authentication failed for user {}: {}", loginRequest.getUsername(), e.getMessage());
+            authFailureCounter.increment();
 
             // Si l'erreur contient "No Such Object", c'est que LDAP n'est pas initialisé
             if (e.getMessage().contains("No Such Object") || e.getMessage().contains("error code 32")) {
@@ -91,6 +116,7 @@ public class AuthController {
         } catch (Exception e) {
             // Filet de sécurité pour toute erreur non prévue
             log.error("Unexpected error during authentication for user {}: {}", loginRequest.getUsername(), e.getMessage());
+            authFailureCounter.increment();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new AuthErrorResponse("An error occurred during authentication"));
         }
