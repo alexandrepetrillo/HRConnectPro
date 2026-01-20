@@ -1,5 +1,6 @@
 package com.hrconnect.employee.infrastructure.security;
 
+import com.hrconnect.socle.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

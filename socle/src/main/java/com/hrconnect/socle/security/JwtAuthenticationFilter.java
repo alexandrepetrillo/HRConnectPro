@@ -1,4 +1,4 @@
-package com.hrconnect.employee.infrastructure.security;
+package com.hrconnect.socle.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,7 +20,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Filtre JWT pour l'authentification basée sur token
+ * Filtre JWT pour l'authentification basée sur token.
+ * Composant transverse utilisé par tous les microservices sécurisés.
+ *
+ * Extrait le token JWT du header Authorization et configure le SecurityContext.
  */
 @Component
 @RequiredArgsConstructor
@@ -43,6 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String rolesString = tokenProvider.getRoles(jwt);
 
                     List<SimpleGrantedAuthority> authorities = Arrays.stream(rolesString.split(","))
+                        .filter(StringUtils::hasText)
                         .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
@@ -53,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    log.debug("Set Authentication in SecurityContext for user: {} with authorities: {}", username, authorities);
+                    log.debug("Set Authentication for user: {} with authorities: {}", username, authorities);
                 } else {
                     log.warn("Invalid JWT provided for request {}", request.getRequestURI());
                 }
@@ -66,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Extrait le token JWT du header Authorization
+     * Extrait le token JWT du header Authorization (Bearer token).
      */
     private String extractJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");

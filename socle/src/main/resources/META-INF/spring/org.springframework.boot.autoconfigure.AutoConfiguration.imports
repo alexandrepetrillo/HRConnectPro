@@ -1,0 +1,4 @@
+com.hrconnect.socle.config.OpenApiConfig
+com.hrconnect.socle.config.ObservabilityConfig
+com.hrconnect.socle.exception.GlobalExceptionHandler
+com.hrconnect.socle.logging.RequestLoggingFilter

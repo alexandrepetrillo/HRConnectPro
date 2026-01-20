@@ -1,7 +1,7 @@
 package com.hrconnect.employee.presentation.controller;
 
-import com.hrconnect.employee.infrastructure.security.JwtTokenProvider;
-import com.hrconnect.employee.presentation.dto.ErrorResponse;
+import com.hrconnect.socle.security.JwtTokenProvider;
+import com.hrconnect.employee.presentation.dto.AuthErrorResponse;
 import com.hrconnect.employee.presentation.dto.JwtResponse;
 import com.hrconnect.employee.presentation.dto.LoginRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -74,7 +74,7 @@ public class AuthController {
             // Échec d'authentification - credentials invalides
             log.warn("Authentication failed for user {}: Invalid credentials", loginRequest.getUsername());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse("Invalid username or password"));
+                .body(new AuthErrorResponse("Invalid username or password"));
         } catch (AuthenticationException e) {
             // Toute autre erreur d'authentification Spring Security
             log.warn("Authentication failed for user {}: {}", loginRequest.getUsername(), e.getMessage());
@@ -83,16 +83,16 @@ public class AuthController {
             if (e.getMessage().contains("No Such Object") || e.getMessage().contains("error code 32")) {
                 log.error("LDAP structure not initialized! Ensure the container bootstrap LDIF is loaded.");
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body(new ErrorResponse("LDAP not initialized. Contact administrator."));
+                    .body(new AuthErrorResponse("LDAP not initialized. Contact administrator."));
             }
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse("Authentication failed"));
+                .body(new AuthErrorResponse("Authentication failed"));
         } catch (Exception e) {
             // Filet de sécurité pour toute erreur non prévue
             log.error("Unexpected error during authentication for user {}: {}", loginRequest.getUsername(), e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("An error occurred during authentication"));
+                .body(new AuthErrorResponse("An error occurred during authentication"));
         }
     }
 

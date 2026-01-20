@@ -5,113 +5,42 @@
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+        POM RACINE - Agrégateur de modules
+        ==================================
+        Ce pom hérite du pom-parent (qui gère les versions) et déclare
+        tous les modules du projet.
+
+        Architecture de soclage :
+        - pom-parent : Gestion centralisée des versions (dependencyManagement)
+        - socle      : Briques techniques communes (dépendances transitives)
+        - modules    : Code métier des microservices
+    -->
+
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
-        <relativePath/>
+        <groupId>com.hrconnect</groupId>
+        <artifactId>pom-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>pom-parent/pom.xml</relativePath>
     </parent>
 
-    <groupId>com.hrconnect</groupId>
-    <artifactId>hrconnectpro-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>hrconnectpro-root</artifactId>
     <packaging>pom</packaging>
 
-    <name>HRConnectPro Parent</name>
+    <name>HRConnectPro Root</name>
     <description>Plateforme RH event-driven pour la gestion des employés, congés, entretiens et paie</description>
 
     <modules>
+        <!-- Modules de soclage (à builder en premier) -->
+        <module>pom-parent</module>
+        <module>socle</module>
+
+        <!-- Modules métier -->
         <module>employee</module>
         <module>interview</module>
         <module>leave-service</module>
         <module>payroll</module>
     </modules>
-
-    <properties>
-        <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- Versions des dépendances -->
-        <spring-cloud.version>2023.0.0</spring-cloud.version>
-        <lombok.version>1.18.30</lombok.version>
-        <postgresql.version>42.7.1</postgresql.version>
-        <micrometer.version>1.12.0</micrometer.version>
-        <opentelemetry.version>1.32.0</opentelemetry.version>
-        <resilience4j.version>2.1.0</resilience4j.version>
-        <springdoc.version>2.3.0</springdoc.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- Spring Cloud -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <!-- Lombok -->
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
-            </dependency>
-
-            <!-- PostgreSQL -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${postgresql.version}</version>
-            </dependency>
-
-            <!-- Resilience4j -->
-            <dependency>
-                <groupId>io.github.resilience4j</groupId>
-                <artifactId>resilience4j-spring-boot3</artifactId>
-                <version>${resilience4j.version}</version>
-            </dependency>
-
-            <!-- SpringDoc OpenAPI -->
-            <dependency>
-                <groupId>org.springdoc</groupId>
-                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-                <version>${springdoc.version}</version>
-            </dependency>
-
-            <!-- Testcontainers -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <configuration>
-                        <excludes>
-                            <exclude>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok</artifactId>
-                            </exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 
 </project>
 

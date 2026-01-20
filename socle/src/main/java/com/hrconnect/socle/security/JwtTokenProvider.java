@@ -1,4 +1,4 @@
-package com.hrconnect.employee.infrastructure.security;
+package com.hrconnect.socle.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -15,7 +15,8 @@ import java.util.Date;
 import java.util.stream.Collectors;
 
 /**
- * Provider pour la génération et validation des tokens JWT
+ * Provider pour la génération et validation des tokens JWT.
+ * Composant transverse utilisé par tous les microservices sécurisés.
  */
 @Component
 @Slf4j
@@ -32,7 +33,7 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Génère un token JWT à partir de l'authentification
+     * Génère un token JWT à partir de l'authentification.
      */
     public String generateToken(Authentication authentication) {
         String username = authentication.getName();
@@ -56,33 +57,21 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Extrait le username du token
+     * Extrait le username du token.
      */
     public String getUsername(String token) {
-        Claims claims = Jwts.parser()
-            .verifyWith(secretKey)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
-
-        return claims.getSubject();
+        return getClaims(token).getSubject();
     }
 
     /**
-     * Extrait les rôles du token
+     * Extrait les rôles du token.
      */
     public String getRoles(String token) {
-        Claims claims = Jwts.parser()
-            .verifyWith(secretKey)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
-
-        return claims.get("roles", String.class);
+        return getClaims(token).get("roles", String.class);
     }
 
     /**
-     * Valide le token JWT
+     * Valide le token JWT.
      */
     public boolean validateToken(String token) {
         try {
@@ -92,9 +81,16 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
+            log.warn("Invalid JWT token: {}", e.getMessage());
             return false;
         }
     }
-}
 
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
+    }
+}

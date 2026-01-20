@@ -1,5 +1,9 @@
 package com.hrconnect.leave.application.service;
 
+import com.hrconnect.leave.domain.exception.EmployeeNotFoundException;
+import com.hrconnect.leave.domain.exception.InvalidLeaveDatesException;
+import com.hrconnect.leave.domain.exception.InvalidLeaveStatusException;
+import com.hrconnect.leave.domain.exception.LeaveNotFoundException;
 import com.hrconnect.leave.domain.model.Leave;
 import com.hrconnect.leave.domain.model.LeaveStatus;
 import com.hrconnect.leave.domain.repository.EmployeeSnapshotRepository;
@@ -36,7 +40,7 @@ public class LeaveService {
 
         // 1. Vérifier que l'employé existe dans le snapshot local
         if (!employeeSnapshotRepository.existsByEmployeeId(leave.getEmployeeId())) {
-            throw new EmployeeNotFoundException("Employee not found in local snapshot: " + leave.getEmployeeId());
+            throw new EmployeeNotFoundException(leave.getEmployeeId());
         }
 
         // 2. Valider les dates
@@ -91,7 +95,7 @@ public class LeaveService {
     public Leave getLeaveById(Long id) {
         log.debug("Fetching leave with id: {}", id);
         return leaveRepository.findById(id)
-                .orElseThrow(() -> new LeaveNotFoundException("Leave not found with id: " + id));
+                .orElseThrow(() -> new LeaveNotFoundException(String.valueOf(id)));
     }
 
     /**
@@ -210,7 +214,7 @@ public class LeaveService {
     public void deleteLeave(Long id) {
         log.info("Deleting leave with id: {}", id);
         if (!leaveRepository.existsById(id)) {
-            throw new LeaveNotFoundException("Leave not found with id: " + id);
+            throw new LeaveNotFoundException(String.valueOf(id));
         }
         leaveRepository.deleteById(id);
     }
@@ -231,31 +235,6 @@ public class LeaveService {
     private int calculateWorkingDaysInMonth(LocalDate date) {
         // Convention standard : 22 jours ouvrés par mois
         return 22;
-    }
-
-    // Exceptions personnalisées
-    public static class EmployeeNotFoundException extends RuntimeException {
-        public EmployeeNotFoundException(String message) {
-            super(message);
-        }
-    }
-
-    public static class LeaveNotFoundException extends RuntimeException {
-        public LeaveNotFoundException(String message) {
-            super(message);
-        }
-    }
-
-    public static class InvalidLeaveDatesException extends RuntimeException {
-        public InvalidLeaveDatesException(String message) {
-            super(message);
-        }
-    }
-
-    public static class InvalidLeaveStatusException extends RuntimeException {
-        public InvalidLeaveStatusException(String message) {
-            super(message);
-        }
     }
 }
 
