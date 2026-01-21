@@ -41,7 +41,11 @@ public class EmployeeEventConsumer {
     private final EmployeeSnapshotRepository employeeSnapshotRepository;
     private final LeaveCounterRepository leaveCounterRepository;
 
-    @KafkaListener(topics = "${kafka.topics.employee-state}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(
+        topics = "${kafka.topics.employee-state}",
+        groupId = "${spring.kafka.consumer.group-id}",
+        containerFactory = "employeeKafkaListenerContainerFactory"
+    )
     @Transactional
     public void consumeEmployeeState(EmployeeState state) {
         log.info("Received employee.state: employeeRef={}", state.getReference());

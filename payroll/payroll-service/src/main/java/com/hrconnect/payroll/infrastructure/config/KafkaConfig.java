@@ -4,6 +4,7 @@ import com.hrconnect.employee.contract.EmployeeState;
 import com.hrconnect.interview.contract.InterviewState;
 import com.hrconnect.leave.contract.LeaveState;
 import com.hrconnect.socle.kafka.KafkaConsumerFactoryBuilder;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,12 @@ public class KafkaConfig {
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
 
+    private final ObservationRegistry observationRegistry;
+
+    public KafkaConfig(ObservationRegistry observationRegistry) {
+        this.observationRegistry = observationRegistry;
+    }
+
     // === Employee Consumer ===
 
     @Bean
@@ -43,7 +50,7 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, EmployeeState> employeeKafkaListenerContainerFactory() {
-        return KafkaConsumerFactoryBuilder.listenerFactory(employeeConsumerFactory());
+        return KafkaConsumerFactoryBuilder.listenerFactory(employeeConsumerFactory(), observationRegistry);
     }
 
     // === Leave Consumer ===
@@ -59,7 +66,7 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, LeaveState> leaveKafkaListenerContainerFactory() {
-        return KafkaConsumerFactoryBuilder.listenerFactory(leaveConsumerFactory());
+        return KafkaConsumerFactoryBuilder.listenerFactory(leaveConsumerFactory(), observationRegistry);
     }
 
     // === Interview Consumer ===
@@ -75,6 +82,6 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, InterviewState> interviewKafkaListenerContainerFactory() {
-        return KafkaConsumerFactoryBuilder.listenerFactory(interviewConsumerFactory());
+        return KafkaConsumerFactoryBuilder.listenerFactory(interviewConsumerFactory(), observationRegistry);
     }
 }

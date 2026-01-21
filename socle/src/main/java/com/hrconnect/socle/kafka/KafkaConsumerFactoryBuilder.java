@@ -1,5 +1,6 @@
 package com.hrconnect.socle.kafka;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
@@ -66,16 +67,40 @@ public class KafkaConsumerFactoryBuilder<T> {
 
     /**
      * Crée rapidement un ListenerContainerFactory à partir d'un ConsumerFactory.
+     * Cette méthode ne configure PAS l'observation (tracing).
      *
      * @param consumerFactory ConsumerFactory à utiliser
      * @param <T>             Type de la valeur
      * @return ListenerContainerFactory configuré
+     * @deprecated Utiliser {@link #listenerFactory(ConsumerFactory, ObservationRegistry)} pour le tracing
      */
+    @Deprecated
     public static <T> ConcurrentKafkaListenerContainerFactory<String, T> listenerFactory(
             ConsumerFactory<String, T> consumerFactory) {
         ConcurrentKafkaListenerContainerFactory<String, T> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
+        return factory;
+    }
+
+    /**
+     * Crée un ListenerContainerFactory avec observation activée pour le tracing distribué.
+     * Cette méthode permet la propagation automatique du traceId via Kafka.
+     *
+     * @param consumerFactory     ConsumerFactory à utiliser
+     * @param observationRegistry ObservationRegistry pour le tracing (non utilisé directement, mais garde la signature pour injection)
+     * @param <T>                 Type de la valeur
+     * @return ListenerContainerFactory configuré avec observation
+     */
+    @SuppressWarnings("unused")
+    public static <T> ConcurrentKafkaListenerContainerFactory<String, T> listenerFactory(
+            ConsumerFactory<String, T> consumerFactory,
+            ObservationRegistry observationRegistry) {
+        ConcurrentKafkaListenerContainerFactory<String, T> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        // Active l'observation pour propager le contexte de trace (traceId/spanId)
+        factory.getContainerProperties().setObservationEnabled(true);
         return factory;
     }
 

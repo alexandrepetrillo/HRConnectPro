@@ -1,31 +1,31 @@
-package com.hrconnect.interview.infrastructure.config;
+package com.hrconnect.leave.infrastructure.config;
 
 import com.hrconnect.employee.contract.EmployeeState;
-import com.hrconnect.interview.contract.InterviewState;
 import com.hrconnect.socle.kafka.KafkaConsumerFactoryBuilder;
-import com.hrconnect.socle.kafka.KafkaProducerFactoryBuilder;
 import io.micrometer.observation.ObservationRegistry;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.*;
-
-import jakarta.annotation.PostConstruct;
+import org.springframework.kafka.core.ConsumerFactory;
 
 /**
- * Configuration Kafka pour Interview-Service.
+ * Configuration Kafka pour Leave-Service.
  * Utilise les builders du socle pour une configuration standardisée.
+ *
+ * Ce service consomme :
+ * - employee.state (EmployeeState)
  */
 @Configuration
-@Slf4j
+@EnableKafka
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    private static final String GROUP_ID = "interview-service";
+    @Value("${spring.kafka.consumer.group-id}")
+    private String groupId;
 
     private final ObservationRegistry observationRegistry;
 
@@ -33,35 +33,13 @@ public class KafkaConfig {
         this.observationRegistry = observationRegistry;
     }
 
-    @PostConstruct
-    public void init() {
-        log.info("Kafka bootstrap servers configured: {}", bootstrapServers);
-    }
-
-    // ========== PRODUCER CONFIG ==========
-
-    @Bean
-    public ProducerFactory<String, InterviewState> producerFactory() {
-        return KafkaProducerFactoryBuilder.<InterviewState>create()
-            .bootstrapServers(bootstrapServers)
-            .build();
-    }
-
-    @Bean
-    public KafkaTemplate<String, InterviewState> kafkaTemplate() {
-        KafkaTemplate<String, InterviewState> template = KafkaProducerFactoryBuilder.kafkaTemplate(producerFactory());
-        // Activer l'observation pour propager le traceId lors de l'envoi
-        template.setObservationEnabled(true);
-        return template;
-    }
-
-    // ========== CONSUMER CONFIG ==========
+    // === Employee Consumer ===
 
     @Bean
     public ConsumerFactory<String, EmployeeState> employeeConsumerFactory() {
         return KafkaConsumerFactoryBuilder.create(EmployeeState.class)
             .bootstrapServers(bootstrapServers)
-            .groupId(GROUP_ID)
+            .groupId(groupId)
             .trustedPackages("com.hrconnect.*")
             .build();
     }

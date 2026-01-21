@@ -36,6 +36,9 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
         spring.json.use.type.headers: false
+    # Activer l'observation pour le tracing distribué (propagation traceId via Kafka)
+    listener:
+      observation-enabled: true
 
 # JWT Configuration
 jwt:
@@ -57,6 +60,12 @@ management:
     export:
       prometheus:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
 
 # OpenAPI / Swagger
 springdoc:
@@ -71,3 +80,5 @@ logging:
   level:
     com.hrconnect.payroll: DEBUG
     org.springframework.kafka: INFO
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

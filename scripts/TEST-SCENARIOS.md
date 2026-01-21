@@ -308,6 +308,6 @@ Ouvrir http://localhost:8080 pour visualiser :
 ## 📊 Swagger UI
 
 - Employee: http://localhost:8081/swagger-ui.html
-- Leave: http://localhost:8082/swagger-ui.html
-- Interview: http://localhost:8083/swagger-ui.html
+- Leave: http://localhost:9082/swagger-ui.html
+- Interview: http://localhost:9083/swagger-ui.html
 - Payroll: http://localhost:8084/swagger-ui.html

@@ -43,9 +43,13 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.hrconnect.employee.contract,com.hrconnect.interview.contract
-        # Utiliser les type headers envoyés par le producteur (approche standard avec contrat partagé)
-        spring.json.use.type.headers: true
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+    # Activer l'observation pour le tracing distribué (propagation traceId via Kafka)
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
 
 server:
   port: 9083
@@ -61,12 +65,20 @@ management:
     export:
       prometheus:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
 
 logging:
   level:
     com.hrconnect.interview: DEBUG
     org.springframework.kafka: INFO
     org.hibernate.SQL: INFO
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 
 # OpenAPI / Swagger
 springdoc:

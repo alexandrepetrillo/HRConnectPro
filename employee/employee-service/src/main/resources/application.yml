@@ -37,6 +37,9 @@ spring:
         max.in.flight.requests.per.connection: 5
         # Activer les type headers avec le FQCN pour la désérialisation côté consumer
         spring.json.add.type.headers: true
+    # Activer l'observation pour le tracing distribué (propagation traceId via Kafka)
+    template:
+      observation-enabled: true
 
 server:
   port: 8081
@@ -61,6 +64,9 @@ management:
   tracing:
     sampling:
       probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
 
 logging:
   level:
@@ -68,6 +74,8 @@ logging:
     org.springframework.kafka: INFO
     org.hibernate.SQL: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
     org.springframework.security: DEBUG
 
 # OpenAPI / Swagger

@@ -6,8 +6,8 @@
 #
 # Ce script teste le flux complet à travers tous les microservices :
 # - Employee-Service (8081)
-# - Leave-Service (8082)
-# - Interview-Service (8083)
+# - Leave-Service (9082)
+# - Interview-Service (9083)
 # - Payroll-Service (8084)
 #
 # Usage:

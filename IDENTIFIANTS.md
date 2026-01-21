@@ -48,11 +48,11 @@ Ces utilisateurs sont définis dans `scripts/ldap-bootstrap/50-init-ldap.ldif` e
 
 Pour gérer LDAP via phpLDAPadmin :
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **URL** | http://localhost:8082 |
+| Paramètre | Valeur                         |
+|-----------|--------------------------------|
+| **URL** | http://localhost:8003          |
 | **Login DN** | cn=admin,dc=hrconnect,dc=local |
-| **Mot de passe** | admin |
+| **Mot de passe** | admin                          |
 
 ---
 
@@ -185,7 +185,7 @@ Department: IT
 
 ### Via phpLDAPadmin (interface web)
 
-1. Ouvrez http://localhost:8082
+1. Ouvrez http://localhost:8003
 2. Connectez-vous avec :
    - **Login DN** : `cn=admin,dc=hrconnect,dc=local`
    - **Password** : `admin`
@@ -257,7 +257,7 @@ Password : password
 **Pour administration LDAP** :
 
 ```
-URL      : http://localhost:8082
+URL      : http://localhost:8003
 Login DN : cn=admin,dc=hrconnect,dc=local
 Password : admin
 ```

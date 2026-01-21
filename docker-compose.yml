@@ -85,9 +85,16 @@ services:
       - "636:636"
     volumes:
       - hrconnect-ldap-data:/var/lib/ldap
+      - hrconnect-ldap-config:/etc/ldap/slapd.d
       - ./scripts/ldap-bootstrap:/home/ldif
     networks:
       - hrconnect-network
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-b", "dc=hrconnect,dc=local", "-D", "cn=admin,dc=hrconnect,dc=local", "-w", "admin"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # Kafka UI (optionnel, pour visualiser les topics)
   kafka-ui:
@@ -139,6 +146,20 @@ services:
     networks:
       - hrconnect-network
 
+  # Jaeger - Tracing distribué
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: hrconnect-jaeger
+    profiles: ["monitoring"]
+    ports:
+      - "16686:16686"   # UI Jaeger
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - hrconnect-network
+
   # phpLDAPadmin (interface web pour gérer LDAP)
   ldap-admin:
     image: osixia/phpldapadmin:0.9.0
@@ -148,7 +169,7 @@ services:
       PHPLDAPADMIN_LDAP_HOSTS: ldap
       PHPLDAPADMIN_HTTPS: "false"
     ports:
-      - "8082:80"
+      - "8003:80"
     depends_on:
       - ldap
     networks:

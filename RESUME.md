@@ -182,8 +182,9 @@ HRConnectPro/
 | Kafka UI | 8080 | ✅ |
 | Prometheus | 9090 | ✅ |
 | Grafana | 3000 | ✅ |
+| **Jaeger** | **16686** | ✅ |
 | OpenLDAP | 389 | ✅ |
-| phpLDAPadmin | 8082 | ✅ |
+| phpLDAPadmin | 8003 | ✅ |
 
 ---
 
@@ -220,11 +221,11 @@ cd payroll/payroll-service && mvn spring-boot:run     # port 8084
 
 ---
 
-## ⏳ Jour 3 - EN COURS (70%)
+## ⏳ Jour 3 - EN COURS (90%)
 
 | TP | Statut | Description |
 |----|--------|-------------|
-| TP8 | ✅ | Observabilité : **Grafana dashboard + Prometheus** |
+| TP8 | ✅ | Observabilité : **Grafana + Prometheus + Jaeger** |
 | TP9 | ✅ | Résilience : **Resilience4j + DLQ Kafka** |
 
 ### Grafana & Prometheus - Implémenté ✅
@@ -232,17 +233,21 @@ cd payroll/payroll-service && mvn spring-boot:run     # port 8084
 **Fonctionnalités :**
 - ✅ **Prometheus** scrape les 4 microservices
 - ✅ **Grafana** avec datasource auto-configurée
-- ✅ **Dashboard HRConnect** provisionné automatiquement (5 panels)
+- ✅ **Dashboard HRConnect** provisionné automatiquement (7 panels)
+- ✅ **Métrique custom** : authentifications OK/KO
 - ✅ Script de démo `./scripts/demo-grafana.sh`
 
-**Dashboard inclut :**
-- Requêtes HTTP/sec par service
-- Latence P95 par service
-- Mémoire JVM Heap
-- État des services (UP/DOWN)
-- Requêtes par endpoint
-
 **Documentation** : `monitoring/README-GRAFANA.md`
+
+### Jaeger (Tracing distribué) - Implémenté ✅
+
+**Fonctionnalités :**
+- ✅ **Jaeger** configuré dans docker-compose (port 16686)
+- ✅ **OpenTelemetry** exporteur OTLP configuré sur les 4 services
+- ✅ **TraceId/SpanId** dans les logs
+- ✅ Propagation automatique du contexte entre services
+
+**Documentation** : `monitoring/README-JAEGER.md`
 
 ### Resilience4j - Implémenté ✅
 
@@ -272,9 +277,6 @@ cd payroll/payroll-service && mvn spring-boot:run     # port 8084
 | GET | `/api/dlq/{topic}/count` | Compter les messages DLQ |
 | POST | `/api/dlq/{topic}/replay` | Rejouer vers le topic original |
 
-### À faire
-
-- ⏳ Tracing distribué (Jaeger)
 
 ---
 
