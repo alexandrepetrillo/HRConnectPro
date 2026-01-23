@@ -90,6 +90,7 @@ HRConnectPro/
 | `RequestLoggingFilter` | Logging des requêtes HTTP + correlationId |
 | `OpenApiConfig` | Configuration Swagger |
 | `ObservabilityConfig` | Support `@Timed` |
+| `KafkaEventPublisher` | Publication Kafka après commit (préserve le contexte de trace) |
 
 ### Utilisation dans un microservice :
 ```xml

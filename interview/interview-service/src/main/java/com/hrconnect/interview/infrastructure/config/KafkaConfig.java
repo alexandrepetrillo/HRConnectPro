@@ -1,7 +1,6 @@
 package com.hrconnect.interview.infrastructure.config;
 
 import com.hrconnect.employee.contract.EmployeeState;
-import com.hrconnect.interview.contract.InterviewState;
 import com.hrconnect.socle.kafka.KafkaConsumerFactoryBuilder;
 import com.hrconnect.socle.kafka.KafkaProducerFactoryBuilder;
 import io.micrometer.observation.ObservationRegistry;
@@ -41,17 +40,17 @@ public class KafkaConfig {
     // ========== PRODUCER CONFIG ==========
 
     @Bean
-    public ProducerFactory<String, InterviewState> producerFactory() {
-        return KafkaProducerFactoryBuilder.<InterviewState>create()
+    public ProducerFactory<String, Object> producerFactory() {
+        return KafkaProducerFactoryBuilder.<Object>create()
             .bootstrapServers(bootstrapServers)
             .build();
     }
 
     @Bean
-    public KafkaTemplate<String, InterviewState> kafkaTemplate() {
-        KafkaTemplate<String, InterviewState> template = KafkaProducerFactoryBuilder.kafkaTemplate(producerFactory());
-        // Activer l'observation pour propager le traceId lors de l'envoi
+    public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> producerFactory) {
+        KafkaTemplate<String, Object> template = new KafkaTemplate<>(producerFactory);
         template.setObservationEnabled(true);
+        log.info("KafkaTemplate configured with observation enabled for distributed tracing");
         return template;
     }
 

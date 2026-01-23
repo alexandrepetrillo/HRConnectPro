@@ -1,13 +1,14 @@
 package com.hrconnect.interview.application.service;
 
+import com.hrconnect.interview.contract.InterviewState;
 import com.hrconnect.interview.domain.model.EmployeeSnapshot;
 import com.hrconnect.interview.domain.model.Interview;
 import com.hrconnect.interview.domain.model.InterviewStatus;
 import com.hrconnect.interview.domain.model.InterviewType;
 import com.hrconnect.interview.domain.repository.EmployeeSnapshotRepository;
 import com.hrconnect.interview.domain.repository.InterviewRepository;
-import com.hrconnect.interview.infrastructure.outbox.OutboxService;
 import com.hrconnect.interview.presentation.dto.InterviewRequest;
+import com.hrconnect.socle.kafka.KafkaEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,14 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service métier pour la gestion des entretiens.
+ * Publie les événements sur Kafka après commit de la transaction.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class InterviewService {
 
+    private static final String INTERVIEW_TOPIC = "interview.state";
+
     private final InterviewRepository interviewRepository;
     private final EmployeeSnapshotRepository employeeSnapshotRepository;
-    private final OutboxService outboxService;
+    private final KafkaEventPublisher<InterviewState> kafkaPublisher;
 
     public List<Interview> findAll() {
         return interviewRepository.findAll();
@@ -57,8 +64,8 @@ public class InterviewService {
 
         Interview saved = interviewRepository.save(interview);
 
-        // Outbox pour Kafka
-        outboxService.saveInterviewState(saved);
+        // Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(INTERVIEW_TOPIC, saved.getReference(), () -> buildState(saved));
 
         log.info("Interview created: {}", saved.getReference());
         return saved;
@@ -82,8 +89,8 @@ public class InterviewService {
 
         Interview saved = interviewRepository.save(interview);
 
-        // Outbox pour Kafka - publie l'augmentation validée
-        outboxService.saveInterviewState(saved);
+        // Publication sur Kafka après commit - publie l'augmentation validée
+        kafkaPublisher.publishAfterCommit(INTERVIEW_TOPIC, saved.getReference(), () -> buildState(saved));
 
         log.info("Interview validated: {} with augmentation: {}", reference, augmentationAccordee);
         return saved;
@@ -98,9 +105,24 @@ public class InterviewService {
 
         Interview saved = interviewRepository.save(interview);
 
-        // Outbox pour Kafka
-        outboxService.saveInterviewState(saved);
+        // Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(INTERVIEW_TOPIC, saved.getReference(), () -> buildState(saved));
 
         return saved;
+    }
+
+    /**
+     * Construit l'état (DTO) à publier sur Kafka.
+     */
+    private InterviewState buildState(Interview interview) {
+        return InterviewState.builder()
+            .reference(interview.getReference())
+            .employeeId(interview.getEmployeeId())
+            .dateEntretien(interview.getDateEntretien() != null ? interview.getDateEntretien().toString() : null)
+            .type(interview.getType() != null ? interview.getType().name() : null)
+            .feedback(interview.getFeedback())
+            .augmentationAccordee(interview.getAugmentationAccordee())
+            .statut(interview.getStatut() != null ? interview.getStatut().name() : null)
+            .build();
     }
 }

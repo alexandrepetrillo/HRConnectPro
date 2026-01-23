@@ -54,7 +54,30 @@ public class EmployeeSnapshot {
 
 - Privilégier la communication **asynchrone via Kafka** (événements)
 - Éviter les appels REST synchrones entre microservices (couplage fort, transaction distribuée)
-- Utiliser le **pattern Outbox** pour garantir la cohérence DB + Kafka
+- Utiliser le **KafkaEventPublisher** du socle pour publier après commit de transaction
+
+**Exemple d'utilisation :**
+
+```java
+@Service
+@RequiredArgsConstructor
+public class EmployeeService {
+    private static final String EMPLOYEE_TOPIC = "employee.state";
+    
+    private final EmployeeRepository repository;
+    private final KafkaEventPublisher<EmployeeState> kafkaPublisher;
+    
+    @Transactional
+    public Employee create(Employee employee) {
+        Employee saved = repository.save(employee);
+        
+        // Publication après commit - préserve le contexte de trace
+        kafkaPublisher.publishAfterCommit(EMPLOYEE_TOPIC, saved.getReference(), () -> buildState(saved));
+        
+        return saved;
+    }
+}
+```
 
 ### 3. Projections locales
 

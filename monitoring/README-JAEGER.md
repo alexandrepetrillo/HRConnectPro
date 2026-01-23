@@ -246,6 +246,23 @@ Vérifier que les dépendances OpenTelemetry sont présentes :
 </dependency>
 ```
 
+### Opérations SQL non visibles dans Jaeger
+
+Pour voir les requêtes SQL (INSERT, SELECT, UPDATE, DELETE) dans les traces, la dépendance suivante est nécessaire :
+```xml
+<dependency>
+    <groupId>net.ttddyy.observation</groupId>
+    <artifactId>datasource-micrometer-spring-boot</artifactId>
+</dependency>
+```
+
+Cette dépendance est déjà incluse dans le **socle**. Chaque requête SQL apparaîtra comme un span dans Jaeger avec :
+- Le type d'opération (SELECT, INSERT, etc.)
+- Le nom de la table
+- Le temps d'exécution
+
+**Note** : Si vous ne voyez toujours pas les spans SQL, redémarrez le microservice après avoir ajouté cette dépendance.
+
 ---
 
 ## 📚 Ressources

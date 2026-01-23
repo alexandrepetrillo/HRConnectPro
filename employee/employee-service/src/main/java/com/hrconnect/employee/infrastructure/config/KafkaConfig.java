@@ -1,6 +1,5 @@
 package com.hrconnect.employee.infrastructure.config;
 
-import com.hrconnect.employee.contract.EmployeeState;
 import com.hrconnect.socle.kafka.KafkaProducerFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,15 +20,15 @@ public class KafkaConfig {
     private String bootstrapServers;
 
     @Bean
-    public ProducerFactory<String, EmployeeState> producerFactory() {
-        return KafkaProducerFactoryBuilder.<EmployeeState>create()
+    public ProducerFactory<String, Object> producerFactory() {
+        return KafkaProducerFactoryBuilder.<Object>create()
             .bootstrapServers(bootstrapServers)
             .build();
     }
 
     @Bean
-    public KafkaTemplate<String, EmployeeState> kafkaTemplate(ProducerFactory<String, EmployeeState> producerFactory) {
-        KafkaTemplate<String, EmployeeState> template = new KafkaTemplate<>(producerFactory);
+    public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> producerFactory) {
+        KafkaTemplate<String, Object> template = new KafkaTemplate<>(producerFactory);
         // Activer l'observation pour propager le traceId lors de l'envoi Kafka
         template.setObservationEnabled(true);
         log.info("KafkaTemplate configured with observation enabled for distributed tracing");

@@ -84,6 +84,18 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
+        <!-- Kafka tracing propagation (permet de propager le traceId via Kafka) -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-kafka-clients-2.6</artifactId>
+        </dependency>
+
+        <!-- JDBC tracing (permet de voir les requêtes SQL dans Jaeger) -->
+        <dependency>
+            <groupId>net.ttddyy.observation</groupId>
+            <artifactId>datasource-micrometer-spring-boot</artifactId>
+        </dependency>
+
         <!-- ================================================== -->
         <!--                     RESILIENCE                      -->
         <!-- ================================================== -->

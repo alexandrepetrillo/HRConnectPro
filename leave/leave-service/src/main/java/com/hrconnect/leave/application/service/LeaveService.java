@@ -1,5 +1,6 @@
 package com.hrconnect.leave.application.service;
 
+import com.hrconnect.leave.contract.LeaveState;
 import com.hrconnect.leave.domain.exception.EmployeeNotFoundException;
 import com.hrconnect.leave.domain.exception.InvalidLeaveDatesException;
 import com.hrconnect.leave.domain.exception.InvalidLeaveStatusException;
@@ -8,7 +9,7 @@ import com.hrconnect.leave.domain.model.Leave;
 import com.hrconnect.leave.domain.model.LeaveStatus;
 import com.hrconnect.leave.domain.repository.EmployeeSnapshotRepository;
 import com.hrconnect.leave.domain.repository.LeaveRepository;
-import com.hrconnect.leave.infrastructure.outbox.OutboxService;
+import com.hrconnect.socle.kafka.KafkaEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Service métier pour la gestion des congés
- * Utilise le pattern Outbox pour garantir la cohérence transactionnelle
+ * Service métier pour la gestion des congés.
+ * Publie les événements sur Kafka après commit de la transaction.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class LeaveService {
 
+    private static final String LEAVE_TOPIC = "leave.state";
+
     private final LeaveRepository leaveRepository;
     private final EmployeeSnapshotRepository employeeSnapshotRepository;
-    private final OutboxService outboxService;
+    private final KafkaEventPublisher<LeaveState> kafkaPublisher;
 
     /**
      * Crée un nouveau congé
@@ -64,8 +67,8 @@ public class LeaveService {
         Leave savedLeave = leaveRepository.save(leave);
         log.info("Leave created with id: {}", savedLeave.getId());
 
-        // 7. Enregistrer dans l'Outbox (dans la même transaction)
-        outboxService.saveLeaveState(savedLeave);
+        // 7. Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(LEAVE_TOPIC, savedLeave.getId().toString(), () -> buildState(savedLeave));
 
         return savedLeave;
     }
@@ -137,8 +140,8 @@ public class LeaveService {
 
         Leave updatedLeave = leaveRepository.save(leave);
 
-        // Enregistrer dans l'Outbox (dans la même transaction)
-        outboxService.saveLeaveState(updatedLeave);
+        // Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(LEAVE_TOPIC, updatedLeave.getId().toString(), () -> buildState(updatedLeave));
 
         return updatedLeave;
     }
@@ -158,8 +161,8 @@ public class LeaveService {
         leave.setStatut(LeaveStatus.VALIDE);
         Leave approvedLeave = leaveRepository.save(leave);
 
-        // Enregistrer dans l'Outbox (dans la même transaction)
-        outboxService.saveLeaveState(approvedLeave);
+        // Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(LEAVE_TOPIC, approvedLeave.getId().toString(), () -> buildState(approvedLeave));
 
         return approvedLeave;
     }
@@ -180,8 +183,8 @@ public class LeaveService {
         leave.setCommentaire(reason);
         Leave rejectedLeave = leaveRepository.save(leave);
 
-        // Enregistrer dans l'Outbox (dans la même transaction)
-        outboxService.saveLeaveState(rejectedLeave);
+        // Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(LEAVE_TOPIC, rejectedLeave.getId().toString(), () -> buildState(rejectedLeave));
 
         return rejectedLeave;
     }
@@ -201,8 +204,8 @@ public class LeaveService {
         leave.setStatut(LeaveStatus.ANNULE);
         Leave cancelledLeave = leaveRepository.save(leave);
 
-        // Enregistrer dans l'Outbox (dans la même transaction)
-        outboxService.saveLeaveState(cancelledLeave);
+        // Publication sur Kafka après commit
+        kafkaPublisher.publishAfterCommit(LEAVE_TOPIC, cancelledLeave.getId().toString(), () -> buildState(cancelledLeave));
 
         return cancelledLeave;
     }
@@ -235,6 +238,24 @@ public class LeaveService {
     private int calculateWorkingDaysInMonth(LocalDate date) {
         // Convention standard : 22 jours ouvrés par mois
         return 22;
+    }
+
+    /**
+     * Construit l'état (DTO) à publier sur Kafka.
+     */
+    private LeaveState buildState(Leave leave) {
+        return LeaveState.builder()
+            .id(leave.getId() != null ? leave.getId().toString() : null)
+            .employeeId(leave.getEmployeeId())
+            .type(leave.getType() != null ? leave.getType().toString() : null)
+            .dateDebut(leave.getDateDebut())
+            .dateFin(leave.getDateFin())
+            .statut(leave.getStatut() != null ? leave.getStatut().toString() : null)
+            .joursPoses(leave.getJoursPoses())
+            .joursTravaillesMois(leave.getJoursTravaillesMois())
+            .joursPosesMois(leave.getJoursPosesMois())
+            .commentaire(leave.getCommentaire())
+            .build();
     }
 }
 

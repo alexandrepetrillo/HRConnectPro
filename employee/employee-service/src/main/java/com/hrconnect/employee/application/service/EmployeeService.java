@@ -1,11 +1,12 @@
 package com.hrconnect.employee.application.service;
 
+import com.hrconnect.employee.contract.EmployeeState;
 import com.hrconnect.employee.domain.model.Employee;
 import com.hrconnect.employee.domain.repository.EmployeeRepository;
 import com.hrconnect.employee.infrastructure.external.SecuValidationException;
 import com.hrconnect.employee.infrastructure.external.SecuValidatorClient;
 import com.hrconnect.employee.infrastructure.external.SecuVerificationResponse;
-import com.hrconnect.employee.infrastructure.outbox.OutboxService;
+import com.hrconnect.socle.kafka.KafkaEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,16 +16,18 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service métier pour la gestion des employés
- * Utilise le pattern Outbox pour garantir la cohérence transactionnelle
+ * Service métier pour la gestion des employés.
+ * Publie les événements sur Kafka après commit de la transaction.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmployeeService {
 
+    private static final String EMPLOYEE_TOPIC = "employee.state";
+
     private final EmployeeRepository employeeRepository;
-    private final OutboxService outboxService;
+    private final KafkaEventPublisher<EmployeeState> kafkaPublisher;
     private final SecuValidatorClient secuValidatorClient;
 
     @Transactional(readOnly = true)
@@ -81,10 +84,10 @@ public class EmployeeService {
 
         Employee saved = employeeRepository.save(employee);
 
-        // Enregistrement dans l'Outbox (dans la même transaction)
-        outboxService.saveEmployeeState(saved);
+        // Publication sur Kafka après commit de la transaction
+        kafkaPublisher.publishAfterCommit(EMPLOYEE_TOPIC, saved.getReference(), () -> buildState(saved));
 
-        log.info("Employee created and state saved to outbox: {}", saved.getReference());
+        log.info("Employee created: {}", saved.getReference());
         return saved;
     }
 
@@ -110,10 +113,10 @@ public class EmployeeService {
 
         Employee updated = employeeRepository.save(existing);
 
-        // Enregistrement dans l'Outbox (dans la même transaction)
-        outboxService.saveEmployeeState(updated);
+        // Publication sur Kafka après commit de la transaction
+        kafkaPublisher.publishAfterCommit(EMPLOYEE_TOPIC, updated.getReference(), () -> buildState(updated));
 
-        log.info("Employee updated and state saved to outbox: {}", updated.getReference());
+        log.info("Employee updated: {}", updated.getReference());
         return updated;
     }
 
@@ -130,6 +133,30 @@ public class EmployeeService {
         employeeRepository.delete(employee);
 
         log.info("Employee deleted: {}", reference);
+    }
+
+    /**
+     * Construit l'état (DTO) à publier sur Kafka.
+     */
+    private EmployeeState buildState(Employee employee) {
+        return EmployeeState.builder()
+            .reference(employee.getReference())
+            .nom(employee.getNom())
+            .prenom(employee.getPrenom())
+            .numeroSecuriteSociale(employee.getNumeroSecuriteSociale())
+            .dateNaissance(employee.getDateNaissance() != null ? employee.getDateNaissance().toString() : null)
+            .email(employee.getEmail())
+            .telephone(employee.getTelephone())
+            .role(employee.getRole())
+            .departement(employee.getDepartement())
+            .managerId(employee.getManagerId())
+            .contrat(employee.getContrat() != null ? EmployeeState.ContratState.builder()
+                .type(employee.getContrat().getType())
+                .debut(employee.getContrat().getDebut() != null ? employee.getContrat().getDebut().toString() : null)
+                .fin(employee.getContrat().getFin() != null ? employee.getContrat().getFin().toString() : null)
+                .build() : null)
+            .salaireAnnuelBase(employee.getSalaireAnnuelBase())
+            .build();
     }
 }
 
