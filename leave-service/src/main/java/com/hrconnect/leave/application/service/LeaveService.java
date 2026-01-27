@@ -103,22 +103,22 @@ public class LeaveService {
      * Initialise les compteurs de congés pour un nouvel employé
      */
     @Transactional
-    public LeaveBalanceResponse initializeLeaveBalance(InitializeLeaveBalanceRequest request) {
-        log.info("Initializing leave balance for employee: {}", request.getEmployeeId());
+    public LeaveBalanceResponse initializeLeaveBalance(String employeeId) {
+        log.info("Initializing leave balance for employee: {}", employeeId);
 
         // Vérifier si les compteurs existent déjà
-        if (employeeLeaveBalanceRepository.existsByEmployeeId(request.getEmployeeId())) {
-            log.warn("Leave balance already exists for employee: {}", request.getEmployeeId());
-            throw new IllegalArgumentException("Leave balance already exists for employee: " + request.getEmployeeId());
+        if (employeeLeaveBalanceRepository.existsByEmployeeId(employeeId)) {
+            log.warn("Leave balance already exists for employee: {}", employeeId);
+            throw new IllegalArgumentException("Leave balance already exists for employee: " + employeeId);
         }
 
         // Valeurs par défaut si non spécifiées
-        Integer cpAnnuels = request.getCpAnnuels() != null ? request.getCpAnnuels() : 25;
-        Integer rttAnnuels = request.getRttAnnuels() != null ? request.getRttAnnuels() : 10;
+        Integer cpAnnuels =  25;
+        Integer rttAnnuels =  10;
 
         // Créer les compteurs
         EmployeeLeaveBalance balance = EmployeeLeaveBalance.builder()
-                .employeeId(request.getEmployeeId())
+                .employeeId(employeeId)
                 .cpAnnuels(cpAnnuels)
                 .rttAnnuels(rttAnnuels)
                 .cpRestants(cpAnnuels)
@@ -127,7 +127,7 @@ public class LeaveService {
 
         EmployeeLeaveBalance saved = employeeLeaveBalanceRepository.save(balance);
         log.info("Leave balance initialized for employee: {} (CP: {}, RTT: {})",
-                request.getEmployeeId(), cpAnnuels, rttAnnuels);
+                employeeId, cpAnnuels, rttAnnuels);
 
         return LeaveBalanceResponse.builder()
                 .employeeId(saved.getEmployeeId())

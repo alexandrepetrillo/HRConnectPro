@@ -25,6 +25,24 @@ spring:
     schemas: leave
     default-schema: leave
 
+  kafka:
+    bootstrap-servers: localhost:9093
+    consumer:
+      group-id: leave-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
 server:
   port: 9082
 
@@ -43,6 +61,12 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+
+# Kafka Topics
+kafka:
+  topics:
+    employee-state: employee.state
+    leave-state: leave.state
 
 # JWT Configuration
 jwt:
