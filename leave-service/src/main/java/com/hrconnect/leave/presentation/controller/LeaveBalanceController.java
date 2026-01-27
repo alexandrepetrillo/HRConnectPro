@@ -23,17 +23,6 @@ public class LeaveBalanceController {
 
     private final LeaveService leaveService;
 
-    @PostMapping("/initialize")
-    @Operation(summary = "Initialiser les compteurs de congés pour un nouvel employé")
-    public ResponseEntity<LeaveBalanceResponse> initializeLeaveBalance(
-            @RequestBody InitializeLeaveBalanceRequest request) {
-        log.info("POST /api/leave-balances/initialize - Initializing leave balance for employee: {}",
-                request.getEmployeeId());
-
-        LeaveBalanceResponse response = leaveService.initializeLeaveBalance(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
     @GetMapping("/{employeeId}")
     @Operation(summary = "Récupérer les compteurs de congés d'un employé")
     public ResponseEntity<LeaveBalanceResponse> getLeaveBalance(@PathVariable String employeeId) {

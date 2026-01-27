@@ -25,6 +25,17 @@ spring:
     schemas: employee
     default-schema: employee
 
+  kafka:
+    bootstrap-servers: localhost:9093
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
 server:
   port: 8081
 
@@ -44,6 +55,10 @@ springdoc:
     path: /swagger-ui.html
     enabled: true
 
+# Kafka Topics
+kafka:
+  topics:
+    employee-state: employee.state
 
 # JWT Configuration
 jwt:
@@ -58,8 +73,4 @@ ldap:
   user-dn-pattern: uid={0},ou=users
   manager-dn: cn=admin,dc=hrconnect,dc=local
   manager-password: admin
-
-# Leave Service Configuration
-leave-service:
-  url: http://localhost:9082
 
