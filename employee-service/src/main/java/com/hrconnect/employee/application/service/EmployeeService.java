@@ -21,7 +21,6 @@ public class EmployeeService {
 
   private final EmployeeRepository employeeRepository;
   private final EmployeeEventPublisher employeeEventPublisher;
-  private final EmployeeCreationService employeeCreationService;
 
   @Transactional(readOnly = true)
   public List<Employee> getAllEmployees() {
@@ -41,33 +40,31 @@ public class EmployeeService {
   /**
    * Crée un nouvel employé et publie l'événement sur Kafka
    *
-   * ⚠️ ATTENTION : L'événement est publié APRÈS la transaction
+   * ✅ L'événement est automatiquement publié APRÈS le commit de la transaction
+   *    grâce au TransactionSynchronizationManager
    *
    * Séquence :
-   * 1. Appel à EmployeeCreationService (transactionnel) → COMMIT
-   * 2. Publication Kafka (hors transaction)
-   *
-   * Si la publication échoue, l'employé existe mais l'événement n'est pas publié !
-   * Le consumer pourra se resynchroniser via un snapshot complet ultérieur.
+   * 1. Appel à EmployeeCreationService (transactionnel)
+   * 2. Enregistrement de la publication Kafka pour après le commit
+   * 3. COMMIT de la transaction
+   * 4. Publication automatique sur Kafka
    */
+  @Transactional
   public Employee createEmployee(Employee employee) {
     log.info("Creating employee: {}", employee.getReference());
 
-    // Étape 1 : Créer l'employé dans une transaction (COMMIT à la fin)
-    Employee saved = employeeCreationService.createEmployeeInTransaction(employee);
-    log.info("✅ Transaction committed - Employee saved: {}", saved.getReference());
-
-    // Étape 2 : Publier l'événement sur Kafka APRÈS le COMMIT
-    try {
-      log.info("Publishing employee.state event to Kafka...");
-      employeeEventPublisher.publishEmployeeState(saved);
-      log.info("✅ Employee state event published for employee: {}", saved.getReference());
-    } catch (Exception e) {
-      log.error("❌ Failed to publish employee state event for employee: {}", saved.getReference(), e);
-      log.warn("⚠️  Employé créé en base, mais événement non publié. La resynchronisation sera nécessaire.");
-      // L'employé existe déjà en base (transaction commitée)
-      // L'événement pourra être republié via un mécanisme de resynchronisation
+    // Vérifier si l'employé existe déjà
+    if (employeeRepository.existsByReference(employee.getReference())) {
+      throw new IllegalArgumentException("Employee already exists: " + employee.getReference());
     }
+
+    // Sauvegarder l'employé
+    Employee saved = employeeRepository.save(employee);
+    log.info("Employee saved in database: {}", saved.getReference());
+
+    // Programmer la publication Kafka APRÈS le commit
+    // Le TransactionSynchronizationManager dans le publisher se charge du reste
+    employeeEventPublisher.publishEmployeeState(saved);
 
     return saved;
   }
@@ -75,6 +72,8 @@ public class EmployeeService {
 
   /**
    * Met à jour un employé existant et publie l'événement
+   *
+   * ✅ L'événement est automatiquement publié APRÈS le commit de la transaction
    */
   @Transactional
   public Employee updateEmployee(String reference, Employee employee) {
@@ -95,15 +94,10 @@ public class EmployeeService {
 
     Employee updated = employeeRepository.save(existing);
 
-    // Publication de l'événement (sera exécuté après le commit de la transaction)
-    try {
-      employeeEventPublisher.publishEmployeeState(updated);
-      log.info("Employee updated and event published: {}", updated.getReference());
-    } catch (Exception e) {
-      log.error("Failed to publish employee state event after update: {}", updated.getReference(), e);
-      // La mise à jour est déjà committée, on log juste l'erreur
-    }
+    // Programmer la publication Kafka APRÈS le commit
+    employeeEventPublisher.publishEmployeeState(updated);
 
+    log.info("Employee updated, event will be published after commit: {}", updated.getReference());
     return updated;
   }
 
