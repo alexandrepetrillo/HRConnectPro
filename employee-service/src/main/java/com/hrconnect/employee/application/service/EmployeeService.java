@@ -21,6 +21,7 @@ public class EmployeeService {
 
   private final EmployeeRepository employeeRepository;
   private final LeaveServiceClient leaveServiceClient;
+  private final EmployeeCreationService employeeCreationService;
 
   @Transactional(readOnly = true)
   public List<Employee> getAllEmployees() {
@@ -39,29 +40,38 @@ public class EmployeeService {
 
   /**
    * Crée un nouvel employé et initialise ses compteurs de congés
+   *
+   * ⚠️ ATTENTION : L'appel REST est fait APRÈS la transaction
+   *
+   * Séquence :
+   * 1. Appel à EmployeeCreationService (transactionnel) → COMMIT
+   * 2. Appel REST au Leave-Service (hors transaction)
+   *
+   * Si l'appel REST échoue, l'employé existe mais sans compteurs !
    */
-  @Transactional
   public Employee createEmployee(Employee employee) {
     log.info("Creating employee: {}", employee.getReference());
 
-    if (employeeRepository.existsByReference(employee.getReference())) {
-      throw new IllegalArgumentException("Employee already exists: " + employee.getReference());
-    }
+    // Étape 1 : Créer l'employé dans une transaction (COMMIT à la fin)
+    Employee saved = employeeCreationService.createEmployeeInTransaction(employee);
+    log.info("✅ Transaction committed - Employee saved: {}", saved.getReference());
 
-    Employee saved = employeeRepository.save(employee);
-
-    // Appel REST au leave-service pour initialiser les compteurs de congés
-    // Par défaut : 25 CP et 10 RTT
+    // Étape 2 : Appel REST au leave-service APRÈS le COMMIT
+    // ⚠️ Si cet appel échoue, l'employé existe mais sans compteurs !
     try {
+      log.info("Calling Leave-Service to initialize balances...");
       leaveServiceClient.initializeLeaveBalance(saved.getReference(), 25, 10);
-      log.info("Employee created and leave balance initialized: {}", saved.getReference());
+      log.info("✅ Leave balance initialized for employee: {}", saved.getReference());
     } catch (Exception e) {
-      log.error("Failed to initialize leave balance for employee: {}", saved.getReference(), e);
-      // On continue même si l'initialisation échoue
+      log.error("❌ Failed to initialize leave balance for employee: {}", saved.getReference(), e);
+      log.error("⚠️  DÉSYNCHRONISATION : Employé créé en base, mais compteurs NON créés !");
+      // ⚠️ L'employé existe déjà en base (transaction commitée)
+      // Impossible de rollback !
     }
 
     return saved;
   }
+
 
   /**
    * Met à jour un employé existant et publie l'événement
