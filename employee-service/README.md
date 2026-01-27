@@ -5,7 +5,7 @@ Microservice de gestion des employés pour HRConnectPro.
 ## Responsabilités
 
 - Gestion des employés : contacts, contrat, rôle, département, manager, salaire annuel de base
-- Publication des snapshots Employee sur le topic Kafka `employee.state`
+- Initialisation automatique des compteurs de congés via appel REST au Leave-Service
 - Exposition d'API REST pour la gestion des employés
 
 ## Technologies
@@ -13,8 +13,8 @@ Microservice de gestion des employés pour HRConnectPro.
 - Java 21
 - Spring Boot 3.2.0
 - Spring Data JPA (PostgreSQL)
-- Spring Kafka
-- Spring Security (LDAP + JWT) - à configurer
+- Spring Web (REST Client)
+- Spring Security (LDAP + JWT)
 - OpenAPI / Swagger
 - Micrometer + Prometheus
 
@@ -37,15 +37,21 @@ employee-service/
 │   │   └── repository/
 │   │       └── EmployeeRepository.java
 │   ├── infrastructure/
+│   │   ├── client/
+│   │   │   ├── LeaveServiceClient.java
+│   │   │   ├── InitializeLeaveBalanceRequest.java
+│   │   │   └── LeaveBalanceResponse.java
 │   │   ├── config/
-│   │   │   ├── KafkaConfig.java
+│   │   │   ├── RestClientConfig.java
 │   │   │   └── OpenApiConfig.java
-│   │   └── event/
-│   │       ├── EmployeeEventPublisher.java
-│   │       └── EmployeeStateEvent.java
+│   │   └── security/
+│   │       ├── SecurityConfig.java
+│   │       ├── JwtTokenProvider.java
+│   │       └── JwtAuthenticationFilter.java
 │   └── presentation/
 │       └── controller/
-│           └── EmployeeController.java
+│           ├── EmployeeController.java
+│           └── AuthController.java
 └── src/main/resources/
     └── application.yml
 ```
@@ -67,8 +73,7 @@ docker-compose up -d
 
 Cela démarre :
 - PostgreSQL (port 5432)
-- Kafka + Zookeeper (port 9092)
-- Kafka UI (port 8080)
+- LDAP (port 389)
 - Prometheus (port 9090)
 - Grafana (port 3000)
 
@@ -93,7 +98,6 @@ java -jar target/employee-service-1.0.0-SNAPSHOT.jar
 - **Swagger UI** : http://localhost:8081/swagger-ui.html
 - **Actuator** : http://localhost:8081/actuator
 - **Prometheus metrics** : http://localhost:8081/actuator/prometheus
-- **Kafka UI** : http://localhost:8080
 - **Grafana** : http://localhost:3000 (admin/admin)
 
 ## API Endpoints
@@ -104,37 +108,35 @@ java -jar target/employee-service-1.0.0-SNAPSHOT.jar
 - `GET /api/employees/{id}` - Récupère un employé par ID
 - `GET /api/employees/departement/{departement}` - Employés par département
 - `GET /api/employees/manager/{managerId}` - Employés par manager
-- `POST /api/employees` - Crée un nouvel employé
+- `POST /api/employees` - Crée un nouvel employé (initialise automatiquement les compteurs de congés)
 - `PUT /api/employees/{id}` - Met à jour un employé
 - `DELETE /api/employees/{id}` - Supprime un employé
 
-## Événements Kafka
+### Authentification
 
-### Topic : `employee.state`
+- `POST /api/auth/login` - Authentification LDAP et génération JWT
 
-Chaque création ou modification d'employé publie un snapshot complet :
+## Communication REST avec Leave-Service
 
-```json
-{
-  "eventId": "uuid",
-  "timestamp": "2025-11-22T15:45:00Z",
-  "version": 5,
-  "source": "employee-service",
-  "employee": {
-    "id": "E123",
-    "nom": "Alice Dupont",
-    "email": "alice@company.com",
-    "telephone": "+33...",
-    "role": "Manager",
-    "departement": "IT",
-    "managerId": "E001",
-    "contrat": {
-      "type": "CDI",
-      "debut": "2022-03-01"
-    },
-    "salaireAnnuelBase": 48000
-  }
-}
+Lors de la création d'un employé, l'Employee-Service effectue automatiquement un appel REST au Leave-Service pour initialiser les compteurs de congés.
+
+**Flux :**
+```
+1. POST /api/employees → Employee-Service
+2. Sauvegarde employé en base
+3. HTTP POST → Leave-Service /api/leave-balances/initialize
+   {
+     "employeeId": "E001",
+     "cpAnnuels": 25,
+     "rttAnnuels": 10
+   }
+4. Retour avec les compteurs initialisés
+```
+
+**Configuration :**
+```yaml
+leave-service:
+  url: http://localhost:9082
 ```
 
 ## Tests
@@ -143,20 +145,31 @@ Chaque création ou modification d'employé publie un snapshot complet :
 mvn test
 ```
 
-Les tests utilisent Testcontainers pour Kafka et PostgreSQL.
+Les tests utilisent Testcontainers pour PostgreSQL.
 
 ## Configuration
 
 Les propriétés principales sont dans `application.yml` :
 
 - Base de données : `spring.datasource.*`
-- Kafka : `spring.kafka.*`
 - Port : `server.port` (8081)
+- Leave Service : `leave-service.url`
+- LDAP : `ldap.*`
+- JWT : `jwt.secret`, `jwt.validity`
 
-## Prochaines étapes (TP)
+## Prochaines étapes
 
-1. Configurer LDAP + JWT pour l'authentification
-2. Implémenter l'outbox pattern pour garantir la publication transactionnelle
+1. ✅ Configuration LDAP + JWT pour l'authentification
+2. ✅ Communication REST avec Leave-Service
+3. Ajouter la gestion des erreurs et retry pour les appels REST
+4. Implémenter un circuit breaker avec Resilience4j
+5. Migrer vers une architecture événementielle (si nécessaire)
+
+## Voir aussi
+
+- [Architecture REST](../ARCHITECTURE_REST.md)
+- [Leave Service](../leave-service/README.md)
+- [Next Steps](../NEXT_STEPS.md)
 3. Ajouter des tests d'intégration avec Testcontainers
 4. Configurer le tracing distribué (Jaeger)
 

@@ -2,6 +2,7 @@ package com.hrconnect.employee.application.service;
 
 import com.hrconnect.employee.domain.model.Employee;
 import com.hrconnect.employee.domain.repository.EmployeeRepository;
+import com.hrconnect.employee.infrastructure.client.LeaveServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,79 +19,89 @@ import java.util.Optional;
 @Slf4j
 public class EmployeeService {
 
-    private final EmployeeRepository employeeRepository;
+  private final EmployeeRepository employeeRepository;
+  private final LeaveServiceClient leaveServiceClient;
 
-    @Transactional(readOnly = true)
-    public List<Employee> getAllEmployees() {
-        return employeeRepository.findAll();
+  @Transactional(readOnly = true)
+  public List<Employee> getAllEmployees() {
+    return employeeRepository.findAll();
+  }
+
+  @Transactional(readOnly = true)
+  public Optional<Employee> getEmployeeById(String reference) {
+    return employeeRepository.findByReference(reference);
+  }
+
+  @Transactional(readOnly = true)
+  public List<Employee> getEmployeesByDepartement(String departement) {
+    return employeeRepository.findByDepartement(departement);
+  }
+
+  /**
+   * Crée un nouvel employé et initialise ses compteurs de congés
+   */
+  @Transactional
+  public Employee createEmployee(Employee employee) {
+    log.info("Creating employee: {}", employee.getReference());
+
+    if (employeeRepository.existsByReference(employee.getReference())) {
+      throw new IllegalArgumentException("Employee already exists: " + employee.getReference());
     }
 
-    @Transactional(readOnly = true)
-    public Optional<Employee> getEmployeeById(String reference) {
-        return employeeRepository.findByReference(reference);
+    Employee saved = employeeRepository.save(employee);
+
+    // Appel REST au leave-service pour initialiser les compteurs de congés
+    // Par défaut : 25 CP et 10 RTT
+    try {
+      leaveServiceClient.initializeLeaveBalance(saved.getReference(), 25, 10);
+      log.info("Employee created and leave balance initialized: {}", saved.getReference());
+    } catch (Exception e) {
+      log.error("Failed to initialize leave balance for employee: {}", saved.getReference(), e);
+      // On continue même si l'initialisation échoue
     }
 
-    @Transactional(readOnly = true)
-    public List<Employee> getEmployeesByDepartement(String departement) {
-        return employeeRepository.findByDepartement(departement);
-    }
+    return saved;
+  }
 
-    /**
-     * Crée un nouvel employé et publie l'événement
-     */
-    @Transactional
-    public Employee createEmployee(Employee employee) {
-        log.info("Creating employee: {}", employee.getReference());
+  /**
+   * Met à jour un employé existant et publie l'événement
+   */
+  @Transactional
+  public Employee updateEmployee(String reference, Employee employee) {
+    log.info("Updating employee: {}", reference);
 
-        if (employeeRepository.existsByReference(employee.getReference())) {
-            throw new IllegalArgumentException("Employee already exists: " + employee.getReference());
-        }
+    Employee existing = employeeRepository.findByReference(reference)
+      .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + reference));
 
-        Employee saved = employeeRepository.save(employee);
+    // Mise à jour des champs
+    existing.setNom(employee.getNom());
+    existing.setEmail(employee.getEmail());
+    existing.setTelephone(employee.getTelephone());
+    existing.setRole(employee.getRole());
+    existing.setDepartement(employee.getDepartement());
+    existing.setManagerId(employee.getManagerId());
+    existing.setContrat(employee.getContrat());
+    existing.setSalaireAnnuelBase(employee.getSalaireAnnuelBase());
 
-        log.info("Employee created and event published: {}", saved.getReference());
-        return saved;
-    }
+    Employee updated = employeeRepository.save(existing);
 
-    /**
-     * Met à jour un employé existant et publie l'événement
-     */
-    @Transactional
-    public Employee updateEmployee(String reference, Employee employee) {
-        log.info("Updating employee: {}", reference);
+    log.info("Employee updated and event published: {}", updated.getReference());
+    return updated;
+  }
 
-        Employee existing = employeeRepository.findByReference(reference)
-            .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + reference));
+  /**
+   * Supprime un employé (soft delete ou hard delete selon besoin métier)
+   */
+  @Transactional
+  public void deleteEmployee(String reference) {
+    log.info("Deleting employee: {}", reference);
 
-        // Mise à jour des champs
-        existing.setNom(employee.getNom());
-        existing.setEmail(employee.getEmail());
-        existing.setTelephone(employee.getTelephone());
-        existing.setRole(employee.getRole());
-        existing.setDepartement(employee.getDepartement());
-        existing.setManagerId(employee.getManagerId());
-        existing.setContrat(employee.getContrat());
-        existing.setSalaireAnnuelBase(employee.getSalaireAnnuelBase());
+    Employee employee = employeeRepository.findByReference(reference)
+      .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + reference));
 
-        Employee updated = employeeRepository.save(existing);
+    employeeRepository.delete(employee);
 
-        log.info("Employee updated and event published: {}", updated.getReference());
-        return updated;
-    }
-
-    /**
-     * Supprime un employé (soft delete ou hard delete selon besoin métier)
-     */
-    @Transactional
-    public void deleteEmployee(String reference) {
-        log.info("Deleting employee: {}", reference);
-
-        Employee employee = employeeRepository.findByReference(reference)
-            .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + reference));
-
-        employeeRepository.delete(employee);
-
-        log.info("Employee deleted: {}", reference);
-    }
+    log.info("Employee deleted: {}", reference);
+  }
 }
 
