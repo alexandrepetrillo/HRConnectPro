@@ -21,8 +21,8 @@
     <description>Plateforme RH event-driven pour la gestion des employés, congés, entretiens et paie</description>
 
     <modules>
-        <module>employee-service</module>
-        <module>leave-service</module>
+        <module>employee</module>
+        <module>leave</module>
     </modules>
 
     <properties>
