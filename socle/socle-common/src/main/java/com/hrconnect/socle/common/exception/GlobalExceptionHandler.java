@@ -1,10 +1,9 @@
-package com.hrconnect.employee.presentation.controller.exception;
+package com.hrconnect.socle.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -65,24 +64,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
-    /**
-     * Gestion des erreurs d'accès refusé (Spring Security).
-     */
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
-            AccessDeniedException ex, HttpServletRequest request) {
 
-        log.warn("Access denied: {} - URI: {}", ex.getMessage(), request.getRequestURI());
+    /**
+     * Gestion des IllegalArgumentException.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException ex, HttpServletRequest request) {
+
+        log.warn("Illegal argument: {}", ex.getMessage());
 
         ErrorResponse error = ErrorResponse.of(
-                HttpStatus.FORBIDDEN.value(),
-                "ACCESS_DENIED",
-                "Accès refusé : vous n'avez pas les permissions nécessaires",
+                HttpStatus.BAD_REQUEST.value(),
+                "INVALID_ARGUMENT",
                 ex.getMessage(),
                 request.getRequestURI()
         );
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        return ResponseEntity.badRequest().body(error);
     }
 
     /**
@@ -98,9 +97,10 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "INTERNAL_ERROR",
                 "Une erreur interne est survenue",
+                ex.getMessage(),
                 request.getRequestURI()
         );
 
-        return ResponseEntity.internalServerError().body(error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

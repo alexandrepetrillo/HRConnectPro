@@ -1,6 +1,6 @@
 package com.hrconnect.employee;
 
-import com.hrconnect.employee.infrastructure.security.JwtTokenProvider;
+import com.hrconnect.socle.security.jwt.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

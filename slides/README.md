@@ -147,6 +147,32 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 
 ---
 
+### 🏛️ ÉTAPE 05b : Soclage Technique - Mutualisation du Code Transverse
+**Fichier** : `COURS_ETAPE_05b_SOCLAGE_TECHNIQUE.md`
+
+**Concepts abordés** :
+- Problème de duplication du code technique (JWT, exceptions, configurations)
+- Architecture en **socle technique** avec modules partagés
+- **POM parent** et gestion centralisée des versions Maven
+- **Auto-configuration Spring Boot** avec `@AutoConfiguration`
+- Beans conditionnels avec `@ConditionalOnClass` et `@ConditionalOnMissingBean`
+- Module **socle-common** : Exceptions métier, ErrorResponse, GlobalExceptionHandler
+- Module **socle-security** : JWT, Spring Security, authentification LDAP
+- Module **socle-kafka** : Publication d'événements après commit, tracing distribué
+- Module **socle-persistence** : JPA, PostgreSQL, Flyway
+- Module **socle-test** : Dépendances de test communes (JUnit, Testcontainers)
+- Pattern **TransactionSynchronization** pour publication Kafka garantie
+
+**Objectif** : Mutualiser le code technique dans un socle partagé pour faciliter la création de nouveaux microservices
+
+**✅ Résultat** : 
+- Un seul endroit pour modifier le code technique
+- Versions centralisées dans pom-parent
+- Nouveau microservice créé en 5 minutes avec toutes les configurations héritées
+- Cohérence garantie entre tous les services
+
+---
+
 ## 🎓 Progression Pédagogique
 
 ```
@@ -165,6 +191,8 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 ÉTAPE 04a : Limites et amélioration (Outbox pattern)
     ↓
 ÉTAPE 05a : Amélioration du code (Multi-Module, contrats partagés)
+    ↓
+ÉTAPE 05b : Soclage technique (Mutualisation du code transverse)
 ```
 
 ---

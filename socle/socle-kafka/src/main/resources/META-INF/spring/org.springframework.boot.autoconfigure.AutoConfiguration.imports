@@ -1,0 +1,2 @@
+com.hrconnect.socle.kafka.SocleKafkaAutoConfiguration
+com.hrconnect.socle.kafka.SocleKafkaConsumerAutoConfiguration

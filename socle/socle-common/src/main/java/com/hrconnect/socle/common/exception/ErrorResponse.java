@@ -1,4 +1,4 @@
-package com.hrconnect.employee.presentation.controller.exception;
+package com.hrconnect.socle.common.exception;
 
 import lombok.Builder;
 import lombok.Getter;
