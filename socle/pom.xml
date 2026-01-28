@@ -12,15 +12,17 @@
         <relativePath>../pom-parent</relativePath>
     </parent>
 
-    <artifactId>employee</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>socle</artifactId>
     <packaging>pom</packaging>
 
-    <name>Employee Module</name>
-    <description>Module parent pour le service Employee et son contrat</description>
+    <name>Socle Technique</name>
+    <description>Module parent du socle technique partagé entre tous les microservices</description>
 
     <modules>
-        <module>employee-contract</module>
-        <module>employee-service</module>
+        <module>socle-common</module>
+        <module>socle-persistence</module>
+        <module>socle-kafka</module>
+        <module>socle-security</module>
+        <module>socle-test</module>
     </modules>
 </project>

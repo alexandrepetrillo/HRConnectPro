@@ -1,4 +1,4 @@
-package com.hrconnect.employee.infrastructure.security;
+package com.hrconnect.socle.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

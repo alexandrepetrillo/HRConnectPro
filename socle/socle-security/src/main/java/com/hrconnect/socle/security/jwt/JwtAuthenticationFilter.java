@@ -1,4 +1,4 @@
-package com.hrconnect.employee.infrastructure.security;
+package com.hrconnect.socle.security.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

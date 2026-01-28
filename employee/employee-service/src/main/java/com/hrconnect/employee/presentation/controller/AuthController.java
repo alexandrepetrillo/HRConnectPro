@@ -1,6 +1,6 @@
 package com.hrconnect.employee.presentation.controller;
 
-import com.hrconnect.employee.infrastructure.security.JwtTokenProvider;
+import com.hrconnect.socle.security.jwt.JwtTokenProvider;
 import com.hrconnect.employee.presentation.dto.AuthErrorResponse;
 import com.hrconnect.employee.presentation.dto.JwtResponse;
 import com.hrconnect.employee.presentation.dto.LoginRequest;
