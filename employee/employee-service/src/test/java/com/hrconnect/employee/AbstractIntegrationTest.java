@@ -31,6 +31,7 @@ public class AbstractIntegrationTest {
     // Le chemin est relatif à la racine du projet (où Maven exécute les tests)
     environment = new DockerComposeContainer<>(new File("../../docker-compose.test.yml"))
       .withExposedService("postgres", 5432)
+      .withExposedService("kafka", 9093)
       .withExposedService("ldap", 389);
     environment.start();
   }
@@ -47,6 +48,10 @@ public class AbstractIntegrationTest {
     var postgresPort = environment.getServicePort("postgres", 5432);
     registry.add("spring.datasource.url",
       () -> String.format("jdbc:postgresql://%s:%d/hrconnect?currentSchema=employee", postgresHost, postgresPort));
+
+    // Kafka : utilise localhost:9093 (port fixe mappé dans docker-compose.test.yml)
+    // Le broker annonce localhost:9093, donc on doit utiliser cette adresse
+    registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9093");
 
     // LDAP : récupère le port dynamique (même si ldap.enabled=false en test)
     String ldapHost = environment.getServiceHost("ldap", 389);
