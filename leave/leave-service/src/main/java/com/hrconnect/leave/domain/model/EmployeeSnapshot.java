@@ -37,6 +37,7 @@ public class EmployeeSnapshot {
     @Column(nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String telephone;
 
     private String role;

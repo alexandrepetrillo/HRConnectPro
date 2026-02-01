@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS leave.employee_snapshot
     reference               VARCHAR(50) NOT NULL UNIQUE,
     nom                     VARCHAR(255) NOT NULL,
     email                   VARCHAR(255) NOT NULL,
-    telephone               VARCHAR(50),
+    telephone               VARCHAR(50) NOT NULL,
     role                    VARCHAR(100),
     departement             VARCHAR(100),
     manager_id              VARCHAR(50),
