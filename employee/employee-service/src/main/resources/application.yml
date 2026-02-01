@@ -39,6 +39,20 @@ spring:
 server:
   port: 8081
 
+# Actuator - Exposition des détails de santé
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    circuitbreakers:
+      enabled: true
+
 logging:
   level:
     com.hrconnect.employee: DEBUG
@@ -79,4 +93,36 @@ external:
   secu-validator:
     url: http://localhost:8089
 
+# Configuration Resilience4j
+resilience4j:
+  circuitbreaker:
+    instances:
+      secuValidator:
+        registerHealthIndicator: true
+        slidingWindowSize: 10                    # Fenêtre de 10 appels
+        minimumNumberOfCalls: 5                  # Minimum 5 appels avant d'évaluer
+        failureRateThreshold: 50                 # 50% d'échecs → OPEN
+        slowCallRateThreshold: 100               # 100% d'appels lents comptent
+        slowCallDurationThreshold: 2s            # > 2s = "lent"
+        waitDurationInOpenState: 30s             # Reste OPEN pendant 30s
+        permittedNumberOfCallsInHalfOpenState: 3 # 3 appels tests en HALF_OPEN
+        automaticTransitionFromOpenToHalfOpenEnabled: true
 
+  retry:
+    instances:
+      secuValidator:
+        maxAttempts: 3                           # 3 tentatives max
+        waitDuration: 500ms                      # Délai entre tentatives
+        exponentialBackoffMultiplier: 2          # 500ms → 1s → 2s
+        retryExceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+          - org.springframework.web.client.ResourceAccessException
+        ignoreExceptions:
+          - com.hrconnect.employee.infrastructure.external.SecuValidationException
+
+  timelimiter:
+    instances:
+      secuValidator:
+        timeoutDuration: 3s                      # Timeout après 3 secondes
+        cancelRunningFuture: true
