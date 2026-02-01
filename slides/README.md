@@ -191,6 +191,27 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 
 ---
 
+### 🛡️ ÉTAPE 06b : Circuit Breaker et Résilience avec Resilience4j
+**Fichier** : `COURS_ETAPE_06b_CIRCUIT_BREAKER_RESILIENCE.md`
+
+**Concepts abordés** :
+- Pattern **Circuit Breaker** : le disjoncteur logiciel
+- **Resilience4j** : bibliothèque de résilience pour Java
+- Les **trois états** : CLOSED, OPEN, HALF_OPEN
+- Pattern **Retry** avec exponential backoff
+- **Fallback** : stratégies de mode dégradé
+- **Monitoring** des métriques via Spring Actuator
+- Distinction entre **erreur technique** et **erreur métier**
+
+**Objectif** : Implémenter la résilience face aux pannes de services externes avec Circuit Breaker et Fallback
+
+**✅ Résultat** : 
+- Le service continue de fonctionner même si le validateur externe est KO
+- Fallback immédiat quand le Circuit Breaker est OPEN (pas d'attente)
+- Métriques observables pour détecter les problèmes
+
+---
+
 ## 🎓 Progression Pédagogique
 
 ```
@@ -213,6 +234,8 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 ÉTAPE 05b : Soclage technique (Mutualisation du code transverse)
     ↓
 ÉTAPE 06a : Service externe (validation sécu) + Mock WireMock
+    ↓
+ÉTAPE 06b : Circuit Breaker et résilience (Resilience4j)
 ```
 
 ---
@@ -285,6 +308,10 @@ Les cours référencent ces scripts pour des démonstrations live.
 | Service externe REST | 06a | ⭐⭐ |
 | WireMock (mock de services) | 06a | ⭐⭐ |
 | Dépendance critique | 06a | ⭐⭐ |
+| Circuit Breaker | 06b | ⭐⭐⭐ |
+| Resilience4j | 06b | ⭐⭐⭐ |
+| Pattern Retry | 06b | ⭐⭐ |
+| Fallback / Mode dégradé | 06b | ⭐⭐⭐ |
 | Transactions distribuées | 03a, 03b | ⭐⭐⭐ |
 | Event-Driven Architecture | 04 | ⭐⭐⭐ |
 | Apache Kafka | 04 | ⭐⭐⭐ |
@@ -343,9 +370,11 @@ Les cours référencent ces scripts pour des démonstrations live.
 - **ÉTAPE 04** : 3-4 heures (Kafka + event-driven)
 - **ÉTAPE 04a** : 2 heures (résilience + Outbox pattern expliqué)
 - **ÉTAPE 05a** : 2 heures (refactoring multi-module)
+- **ÉTAPE 05b** : 2 heures (soclage technique)
 - **ÉTAPE 06a** : 1-2 heures (service externe + WireMock + démonstration indisponibilité)
+- **ÉTAPE 06b** : 2 heures (Circuit Breaker + Resilience4j + démonstration)
 
-**Total** : ~17 heures de cours + TP
+**Total** : ~19-21 heures de cours + TP
 
 ### Points d'Attention
 
@@ -366,6 +395,7 @@ Les cours référencent ces scripts pour des démonstrations live.
 - **ÉTAPE 04** : Arrêter leave-service, créer un employé, redémarrer → synchronisation automatique
 - **ÉTAPE 05a** : Modifier EmployeeState, montrer l'erreur de compilation dans leave-service
 - **ÉTAPE 06a** : Arrêter WireMock (docker stop secu-validator) → Impossible de créer un employé
+- **ÉTAPE 06b** : Provoquer 5+ erreurs 503 → Observer le CB passer en OPEN → Fallback immédiat
 
 ---
 
@@ -383,7 +413,8 @@ slides/
 ├── COURS_ETAPE_04a_RESILIENCE_ET_PATTERN_OUTBOX.md
 ├── COURS_ETAPE_05a_PARTAGE_CONTRATS_MULTIMODULE.md
 ├── COURS_ETAPE_05b_SOCLAGE_TECHNIQUE.md
-└── COURS_ETAPE_06a_SERVICE_EXTERNE_VALIDATION_SECU.md
+├── COURS_ETAPE_06a_SERVICE_EXTERNE_VALIDATION_SECU.md
+└── COURS_ETAPE_06b_CIRCUIT_BREAKER_RESILIENCE.md
 ```
 
 Chaque fichier est **autonome** mais s'appuie sur les concepts des étapes précédentes.
