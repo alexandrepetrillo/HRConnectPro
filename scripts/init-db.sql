@@ -7,6 +7,7 @@ CREATE SCHEMA IF NOT EXISTS employee;
 -- Schéma pour le microservice Leave
 CREATE SCHEMA IF NOT EXISTS leave;
 
+
 -- Accorder les privilèges au user hrconnect pour employee
 GRANT ALL PRIVILEGES ON SCHEMA employee TO hrconnect;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA employee TO hrconnect;

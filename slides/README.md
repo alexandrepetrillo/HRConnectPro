@@ -118,13 +118,13 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 - Pattern Outbox (transactional outbox pattern)
 - Garantie at-least-once delivery
 - Table outbox_events + worker de relay
-- Comparaison des architectures
 
-**Objectif** : Comprendre les limites de la solution Kafka simple et découvrir le pattern Outbox pour une garantie totale
+**Objectif** : Comprendre les limites de la solution Kafka simple et découvrir le pattern Outbox
 
-**📌 Note** : Le pattern Outbox n'est **pas implémenté** dans le projet (complexité non justifiée pour un TP), mais il est expliqué pour la culture générale.
+**📌 Note** : Le pattern Outbox n'est **pas implémenté** dans le projet (complexité non justifiée pour un TP)
 
 ---
+
 
 ### 📦 ÉTAPE 05a : Partage de Contrats et Multi-Module Maven
 **Fichier** : `COURS_ETAPE_05a_PARTAGE_CONTRATS_MULTIMODULE.md`
@@ -212,6 +212,33 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 
 ---
 
+### 💀 ÉTAPE 07 : Dead Letter Queue (DLQ) - Gestion des Erreurs Kafka
+**Fichier** : `COURS_ETAPE_07_DLQ_GESTION_ERREURS_KAFKA.md`
+
+**Concepts abordés** :
+- **Dead Letter Queue (DLQ)** : stocker les messages en erreur
+- DLQ en **base de données** (PostgreSQL) vs topic Kafka
+- **Retries automatiques** avec backoff configurable
+- Stockage du **payload JSONB** pour requêtes SQL
+- Cycle de vie des messages : PENDING → PROCESSING → RESOLVED/FAILED/IGNORED
+- **API REST** de gestion (`/api/dlq`)
+- **Replay** des messages après correction
+- Intégration **soclée** dans le module `socle-kafka`
+- Configuration via `DlqProperties`
+- `DatabaseDlqRecoverer` comme ConsumerRecordRecoverer
+- Corrélation avec **traceId** pour le debugging
+
+**Objectif** : Garantir **zéro perte de message** et permettre l'analyse/replay des erreurs Kafka
+
+**✅ Résultat** : 
+- Les messages en erreur sont stockés en base après épuisement des retries
+- API REST pour consulter, analyser et rejouer les messages
+- Intégration automatique dans tout service utilisant `socle-kafka`
+
+**🔧 Script de test** : `./scripts/test-kafka-dlq.sh`
+
+---
+
 ## 🎓 Progression Pédagogique
 
 ```
@@ -236,6 +263,8 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 ÉTAPE 06a : Service externe (validation sécu) + Mock WireMock
     ↓
 ÉTAPE 06b : Circuit Breaker et résilience (Resilience4j)
+    ↓
+ÉTAPE 07 : Dead Letter Queue (DLQ) - Gestion des erreurs Kafka
 ```
 
 ---
