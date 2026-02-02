@@ -190,9 +190,108 @@ show_menu() {
     echo ""
     echo "  1) Créer un employé SANS téléphone (provoque erreur DLQ)"
     echo "  2) Vérifier si un employé existe dans Leave Service"
-    echo "  3) Quitter"
+    echo "  3) Consulter les messages DLQ (via API REST)"
+    echo "  4) Rejouer tous les messages DLQ"
+    echo "  5) Quitter"
     echo ""
-    echo -e "${CYAN}Choisissez une option [1-3] :${NC}"
+    echo -e "${CYAN}Choisissez une option [1-5] :${NC}"
+}
+
+# Fonction pour afficher les messages DLQ via l'API REST
+show_dlq_messages() {
+    echo ""
+    echo -e "${BLUE}Messages DLQ via API REST (/api/dlq) :${NC}"
+    echo ""
+
+    # Appeler l'API stats avec authentification
+    echo -e "${CYAN}📊 Statistiques DLQ :${NC}"
+    STATS_RESPONSE=$(curl -s -H "Authorization: Bearer ${TOKEN}" "${LEAVE_SERVICE_URL}/api/dlq/stats" 2>/dev/null)
+
+    if echo "$STATS_RESPONSE" | jq -e '.totalPending' > /dev/null 2>&1; then
+        echo "$STATS_RESPONSE" | jq '.'
+    else
+        echo -e "${RED}   Impossible de récupérer les stats (API DLQ non disponible ?)${NC}"
+        echo "   Avez-vous redémarré Leave Service avec la nouvelle config ?"
+        return
+    fi
+
+    echo ""
+    echo -e "${CYAN}📋 Messages en attente (PENDING) :${NC}"
+    PENDING_RESPONSE=$(curl -s -H "Authorization: Bearer ${TOKEN}" "${LEAVE_SERVICE_URL}/api/dlq/pending" 2>/dev/null)
+
+    if echo "$PENDING_RESPONSE" | jq -e '.' > /dev/null 2>&1; then
+        # Afficher un résumé des messages pending
+        echo "$PENDING_RESPONSE" | jq -r '.[] | "  ID: \(.id) | Topic: \(.topic) | Key: \(.messageKey) | Error: \(.errorType | split(".") | .[-1])"'
+
+        PENDING_COUNT=$(echo "$PENDING_RESPONSE" | jq 'length')
+        echo ""
+        echo -e "${YELLOW}Total: ${PENDING_COUNT} message(s) en attente${NC}"
+    else
+        echo "   Aucun message ou erreur API"
+    fi
+
+    echo ""
+    echo -e "${YELLOW}Voulez-vous voir le détail d'un message ? (entrez l'ID ou 'n' pour non)${NC}"
+    read -r msg_id
+
+    if [[ "$msg_id" =~ ^[0-9]+$ ]]; then
+        echo ""
+        echo -e "${BLUE}Détail du message DLQ #${msg_id} :${NC}"
+        curl -s -H "Authorization: Bearer ${TOKEN}" "${LEAVE_SERVICE_URL}/api/dlq/${msg_id}" | jq '.'
+    fi
+    echo ""
+}
+
+# Fonction pour rejouer tous les messages DLQ
+replay_all_dlq() {
+    echo ""
+    echo -e "${BLUE}Rejeu de tous les messages DLQ en attente...${NC}"
+    echo ""
+
+    # D'abord afficher combien de messages sont pending
+    STATS_RESPONSE=$(curl -s -H "Authorization: Bearer ${TOKEN}" "${LEAVE_SERVICE_URL}/api/dlq/stats" 2>/dev/null)
+    PENDING_COUNT=$(echo "$STATS_RESPONSE" | jq -r '.totalPending // 0')
+
+    if [ "$PENDING_COUNT" == "0" ]; then
+        echo -e "${YELLOW}Aucun message en attente à rejouer.${NC}"
+        return
+    fi
+
+    echo -e "${YELLOW}⚠️  ${PENDING_COUNT} message(s) vont être rejoués.${NC}"
+    echo -e "${YELLOW}Confirmer ? (o/n)${NC}"
+    read -r confirm
+
+    if [[ "$confirm" != "o" && "$confirm" != "O" ]]; then
+        echo -e "${CYAN}Rejeu annulé.${NC}"
+        return
+    fi
+
+    echo ""
+    echo -e "${CYAN}🔄 Lancement du rejeu...${NC}"
+
+    REPLAY_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" "${LEAVE_SERVICE_URL}/api/dlq/replay-all" 2>/dev/null)
+
+    if echo "$REPLAY_RESPONSE" | jq -e '.total' > /dev/null 2>&1; then
+        TOTAL=$(echo "$REPLAY_RESPONSE" | jq -r '.total')
+        SUCCESS=$(echo "$REPLAY_RESPONSE" | jq -r '.successful')
+        FAILED=$(echo "$REPLAY_RESPONSE" | jq -r '.failed')
+
+        echo ""
+        echo -e "${GREEN}✅ Rejeu terminé !${NC}"
+        echo "   Total traité : ${TOTAL}"
+        echo -e "   ${GREEN}Succès : ${SUCCESS}${NC}"
+        echo -e "   ${RED}Échecs : ${FAILED}${NC}"
+
+        if [ "$FAILED" != "0" ]; then
+            echo ""
+            echo -e "${YELLOW}Détail des échecs :${NC}"
+            echo "$REPLAY_RESPONSE" | jq -r '.details[] | select(.success == false) | "  ID \(.messageId): \(.message)"'
+        fi
+    else
+        echo -e "${RED}❌ Erreur lors du rejeu${NC}"
+        echo "$REPLAY_RESPONSE"
+    fi
+    echo ""
 }
 
 # Boucle principale du menu interactif
@@ -212,26 +311,31 @@ run_interactive() {
                 echo ""
                 create_employee_without_phone
                 echo ""
-                echo -e "${YELLOW}⏳ Attente de 3 secondes pour le traitement Kafka...${NC}"
-                sleep 3
+                echo -e "${YELLOW}⏳ Attente de 5 secondes pour le traitement Kafka (3 retries)...${NC}"
+                sleep 5
                 echo ""
-                echo -e "${CYAN}💡 Astuce : Regardez les logs du Leave Service pour voir les 10 retries !${NC}"
-                echo -e "${CYAN}   Le message sera ensuite PERDU (pas de DLQ configurée)${NC}"
+                echo -e "${CYAN}💡 Le message devrait maintenant être dans la DLQ !${NC}"
+                echo -e "${CYAN}   Utilisez l'option 3 pour voir les messages DLQ.${NC}"
                 echo ""
                 echo -e "${YELLOW}Référence créée : ${CREATED_EMP_REF}${NC}"
-                echo -e "${YELLOW}Utilisez l'option 2 pour vérifier que le snapshot N'A PAS été créé.${NC}"
                 ;;
             2)
                 echo ""
                 check_employee_in_leave
                 ;;
             3)
+                show_dlq_messages
+                ;;
+            4)
+                replay_all_dlq
+                ;;
+            5)
                 echo ""
                 echo -e "${GREEN}Au revoir !${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Option invalide. Choisissez 1, 2 ou 3.${NC}"
+                echo -e "${RED}Option invalide. Choisissez 1, 2, 3, 4 ou 5.${NC}"
                 ;;
         esac
     done

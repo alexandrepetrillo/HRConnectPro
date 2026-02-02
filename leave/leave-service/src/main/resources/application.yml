@@ -68,6 +68,15 @@ kafka:
     employee-state: employee.state
     leave-state: leave.state
 
+# Configuration DLQ (Dead Letter Queue) soclée
+socle:
+  kafka:
+    dlq:
+      enabled: true
+      max-retries: 3
+      retry-interval-ms: 1000
+      # service-name: leave-service  # Optionnel, utilise spring.application.name par défaut
+
 # JWT Configuration
 jwt:
   secret: hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256
