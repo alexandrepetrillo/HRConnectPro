@@ -1,0 +1,66 @@
+# Configuration Promtail pour Loki
+# Collecte des logs Docker pour HRConnectPro
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Logs des containers Docker
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=hrconnectpro"]
+
+    relabel_configs:
+      # Extraire le nom du container
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+
+      # Extraire le nom du service depuis les labels Compose
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+
+      # Extraire le projet Compose
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'project'
+
+      # Log stream (stdout/stderr)
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+
+    pipeline_stages:
+      # Essayer de parser les logs JSON Spring Boot
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            logger: logger
+            message: message
+            traceId: traceId
+            spanId: spanId
+            thread: thread
+          source: message
+
+      # Si le parsing JSON réussit, extraire les labels
+      - labels:
+          level:
+          traceId:
+
+      # Sinon, extraire le niveau de log du texte brut
+      - regex:
+          expression: '.*(?P<level>ERROR|WARN|INFO|DEBUG|TRACE).*'
+          source: message
+
+      - labels:
+          level:
