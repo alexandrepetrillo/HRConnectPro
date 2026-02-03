@@ -58,6 +58,19 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
+        <!-- Instrumentation pour JDBC (traces SQL) -->
+        <dependency>
+            <groupId>net.ttddyy.observation</groupId>
+            <artifactId>datasource-micrometer-spring-boot</artifactId>
+            <version>1.0.3</version>
+        </dependency>
+
+        <!-- Instrumentation pour HTTP client (RestTemplate, RestClient, WebClient) -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-observation</artifactId>
+        </dependency>
+
         <!-- Lombok (optional - les MS doivent le déclarer explicitement) -->
         <dependency>
             <groupId>org.projectlombok</groupId>

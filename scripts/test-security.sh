@@ -61,6 +61,46 @@ print_info() {
 # Authentification
 # =============================================================================
 
+test_bad_credentials() {
+    echo ""
+    echo -e "  ${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  ${BOLD}Test connexion avec mauvais identifiants${NC}"
+    echo -e "  ${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    echo -n "  Tentative avec login='hacker' / password='wrongpassword'... "
+
+    local response
+    response=$(curl -s -w "\n%{http_code}" -X POST "${EMPLOYEE_URL}/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -d '{"username":"hacker","password":"wrongpassword"}' 2>/dev/null) || true
+
+    local http_code=$(echo "$response" | tail -n1)
+    local body=$(echo "$response" | sed '$d')
+
+    echo ""
+    echo ""
+    echo -e "  Code HTTP: ${BOLD}$http_code${NC}"
+    echo ""
+
+    case "$http_code" in
+        401)
+            print_success "Comportement attendu : 401 - Authentification refusée"
+            echo -e "  ${GREEN}→ La sécurité fonctionne correctement !${NC}"
+            ;;
+        200)
+            print_error "PROBLÈME : La connexion a réussi avec de mauvais identifiants !"
+            ;;
+        *)
+            print_warning "Code inattendu: $http_code"
+            if [ -n "$body" ]; then
+                echo -e "  Réponse: $body"
+            fi
+            ;;
+    esac
+    echo ""
+}
+
 login_user() {
     local username=$1
     local password=$2
@@ -248,6 +288,7 @@ show_main_menu() {
     echo -e "${BLUE}║${NC}  ${YELLOW}CM${NC} = Kevin (MANAGER)             ${CYAN}TL${NC} = GET /employees        ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}  ${MAGENTA}CU${NC} = Sophie (USER)               ${RED}TD${NC} = DELETE                ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}  ${RED}C0${NC} = Anonyme (pas de token)      ${MAGENTA}TA${NC} = Tous les tests        ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}  ${RED}CX${NC} = Mauvais login/mdp                                        ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}                                                               ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}  ${CYAN}H${NC} = Aide    ${CYAN}Q${NC} = Quitter                                     ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}                                                               ${BLUE}║${NC}"
@@ -297,6 +338,9 @@ main() {
                 ;;
             C0)
                 connect_as "anonymous" "AUCUN" "Anonyme"
+                ;;
+            CX)
+                test_bad_credentials
                 ;;
 
             # Tests

@@ -111,6 +111,54 @@ services:
     networks:
       - hrconnect-network
 
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hrconnect-prometheus
+    profiles: ["monitoring"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - hrconnect-prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - hrconnect-network
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hrconnect-grafana
+    profiles: ["monitoring"]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - hrconnect-grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - hrconnect-network
+
+  # Jaeger - Tracing distribué
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: hrconnect-jaeger
+    profiles: ["monitoring"]
+    ports:
+      - "16686:16686"   # UI Jaeger
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - hrconnect-network
+
   # phpLDAPadmin (interface web pour gérer LDAP)
   ldap-admin:
     image: osixia/phpldapadmin:0.9.0
@@ -139,10 +187,52 @@ services:
     networks:
       - hrconnect-network
 
+  # Loki - Centralisation des logs
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: hrconnect-loki
+    profiles: ["monitoring"]
+    user: "10001"
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
+      - hrconnect-loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - hrconnect-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Promtail - Collecteur de logs
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: hrconnect-promtail
+    profiles: ["monitoring"]
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - hrconnect-network
+    depends_on:
+      loki:
+        condition: service_healthy
+
 volumes:
   hrconnect-postgres-data:
   hrconnect-ldap-data:
   hrconnect-ldap-config:
+  hrconnect-prometheus-data:
+  hrconnect-grafana-data:
+  hrconnect-loki-data:
 
 networks:
   hrconnect-network:

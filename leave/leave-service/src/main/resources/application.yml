@@ -8,6 +8,11 @@ spring:
     password: hrconnect
     driver-class-name: org.postgresql.Driver
 
+  # Configuration pour l'observation JDBC (traces SQL)
+  sql:
+    init:
+      mode: never
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,6 +22,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         default_schema: leave
+        # Activation des statistiques Hibernate pour le tracing
+        generate_statistics: true
 
   flyway:
     enabled: true
@@ -82,3 +89,35 @@ jwt:
   secret: hrconnect-secret-key-for-jwt-token-generation-minimum-256-bits-required-for-hs256
   validity: 3600000  # 1 heure en millisecondes
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,retries,retryevents
+  endpoint:
+    health:
+      show-details: always
+  observations:
+    http:
+      server:
+        requests:
+          name: http.server.requests
+    jdbc:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces

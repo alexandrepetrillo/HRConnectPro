@@ -239,6 +239,43 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 
 ---
 
+### 📊 ÉTAPE 08 : Observabilité avec Jaeger et Grafana
+**Fichier** : `COURS_ETAPE_08_OBSERVABILITE_JAEGER_GRAFANA.md`
+
+**Concepts abordés** :
+- Les **trois piliers de l'observabilité** : Logs, Métriques, Traces
+- **Prometheus** : collecte et stockage des métriques time-series
+- **Grafana** : visualisation avec dashboards personnalisés
+- **Jaeger** : tracing distribué avec OpenTelemetry
+- **Micrometer** : instrumentation Spring Boot pour les métriques
+- **Spring Boot Actuator** : endpoints de monitoring (`/actuator/prometheus`, `/actuator/health`)
+- Métriques HTTP : throughput, latence (P50, P95, P99), taux d'erreurs
+- Métriques JVM : mémoire heap, threads, garbage collection
+- Métriques Circuit Breaker : état, taux d'échecs
+- **Observations** : instrumentation automatique (HTTP, JDBC, Kafka, RestTemplate)
+- **Tracing distribué** : suivre une requête à travers tous les services (spans)
+- Identification des **bottlenecks** et analyse des performances
+- **Corrélation logs ↔ traces** via traceId et spanId
+- Graphe de **dépendances** entre services
+- Configuration du **sampling** (100% en dev, 1% en prod)
+- Dashboards préconfigurés : requêtes par endpoint, latence, état des services
+
+**Objectif** : Mettre en place une stack d'observabilité complète pour surveiller, diagnostiquer et optimiser les microservices
+
+**✅ Résultat** : 
+- Visibilité temps réel sur les performances (Grafana dashboards)
+- Tracing de bout en bout des requêtes distribuées (Jaeger)
+- Détection rapide des problèmes et bottlenecks
+- Corrélation entre logs et traces pour le debugging
+- Alerting proactif sur les métriques critiques
+
+**🔧 URLs** :
+- Grafana : http://localhost:3000 (admin/admin)
+- Prometheus : http://localhost:9090
+- Jaeger : http://localhost:16686
+
+---
+
 ## 🎓 Progression Pédagogique
 
 ```
@@ -265,7 +302,11 @@ Les cours suivent une progression logique, chaque étape enrichissant le projet 
 ÉTAPE 06b : Circuit Breaker et résilience (Resilience4j)
     ↓
 ÉTAPE 07 : Dead Letter Queue (DLQ) - Gestion des erreurs Kafka
+    ↓
+ÉTAPE 08 : Observabilité (Prometheus, Grafana, Jaeger)
 ```
+
+**🎯 Résultat final** : Une plateforme RH microservices complète, résiliente et observable
 
 ---
 
@@ -443,7 +484,9 @@ slides/
 ├── COURS_ETAPE_05a_PARTAGE_CONTRATS_MULTIMODULE.md
 ├── COURS_ETAPE_05b_SOCLAGE_TECHNIQUE.md
 ├── COURS_ETAPE_06a_SERVICE_EXTERNE_VALIDATION_SECU.md
-└── COURS_ETAPE_06b_CIRCUIT_BREAKER_RESILIENCE.md
+├── COURS_ETAPE_06b_CIRCUIT_BREAKER_RESILIENCE.md
+├── COURS_ETAPE_07_DLQ_GESTION_ERREURS_KAFKA.md
+└── COURS_ETAPE_08_OBSERVABILITE_JAEGER_GRAFANA.md
 ```
 
 Chaque fichier est **autonome** mais s'appuie sur les concepts des étapes précédentes.
@@ -454,12 +497,12 @@ Chaque fichier est **autonome** mais s'appuie sur les concepts des étapes préc
 
 Ces cours peuvent être étendus avec :
 
-- **ÉTAPE 05b** : Schema Registry pour validation automatique des contrats
-- **ÉTAPE 06** : Observabilité (Prometheus, Grafana, distributed tracing)
-- **ÉTAPE 07** : Déploiement Kubernetes (Helm charts, service mesh)
-- **ÉTAPE 08** : Event Sourcing et CQRS
-- **ÉTAPE 09** : Saga Pattern pour les transactions distribuées
-- **ÉTAPE 10** : API Gateway (Spring Cloud Gateway)
+- **Schema Registry** : validation automatique des contrats d'événements Kafka
+- **Déploiement Kubernetes** : Helm charts, service mesh (Istio/Linkerd)
+- **Event Sourcing et CQRS** : architecture avancée d'événements
+- **Saga Pattern** : orchestration des transactions distribuées
+- **API Gateway** : Spring Cloud Gateway ou Kong
+- **Service Mesh** : gestion du trafic et sécurité (mTLS)
 
 ---
 

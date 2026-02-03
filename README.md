@@ -237,5 +237,58 @@ Chaque MS stocke localement les données qu'il consomme :
 - **Flux** : publications `employee.state`, `leave.state`, `interview.state`, `payroll.state`, `report.state`
 - **Sécurité** : LDAP + JWT, ACL Kafka
 - **Intégration legacy** : SOAP depuis Payroll
-- **Observabilité** : Prometheus, Grafana, Jaeger, DLT Kafka
+- **Observabilité** : Prometheus, Grafana, Jaeger, **Loki** (logs centralisés)
 - **MVP** : gestion employés/contrats/salaires, congés & validation, entretiens & augmentations, fiches de paie, reporting
+
+---
+
+## 📚 Documentation et Supports de Cours
+
+Le projet inclut des supports de cours détaillés couvrant tous les aspects de l'architecture :
+
+- **[Supports de Cours](slides/README.md)** : progression pédagogique en 8 étapes
+  - ÉTAPE 01 : Initialisation et structure du projet
+  - ÉTAPE 02 : Sécurité LDAP + JWT
+  - ÉTAPE 03-04 : Communication entre services (HTTP puis Kafka)
+  - ÉTAPE 05 : Multi-module Maven et soclage technique
+  - ÉTAPE 06 : Services externes et résilience (Circuit Breaker)
+  - ÉTAPE 07 : Dead Letter Queue (DLQ)
+  - ÉTAPE 08 : **Observabilité avec Jaeger et Grafana** ⭐
+
+- **[Quick Start Guide](QUICK_START.md)** : démarrage rapide du projet
+- **[Architecture](ARCHITECTURE_SOCLEE.md)** : documentation du socle technique
+- **[Monitoring Grafana](monitoring/README-GRAFANA.md)** : dashboards et métriques
+- **[Monitoring Jaeger](monitoring/README-JAEGER.md)** : tracing distribué
+
+---
+
+## 🚀 Démarrage Rapide
+
+```bash
+# 1. Démarrer l'infrastructure
+./start-infra.sh
+
+# 2. Compiler le projet
+mvn clean install -DskipTests
+
+# 3. Démarrer les services
+# Terminal 1
+cd employee/employee-service && mvn spring-boot:run
+
+# Terminal 2
+cd leave/leave-service && mvn spring-boot:run
+
+# 4. Accéder aux interfaces
+# - Swagger Employee : http://localhost:8081/swagger-ui.html
+# - Swagger Leave : http://localhost:9082/swagger-ui.html
+# - Grafana : http://localhost:3000 (admin/admin)
+# - Jaeger : http://localhost:16686
+# - Prometheus : http://localhost:9090
+# - Loki (logs) : Dashboard "Logs Centralisés" dans Grafana
+
+# 5. Optionnel : Démarrer la centralisation des logs
+./start-logs.sh
+```
+
+Voir [QUICK_START.md](QUICK_START.md) pour plus de détails.
+
