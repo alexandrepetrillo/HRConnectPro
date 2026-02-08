@@ -94,24 +94,24 @@
 **Schéma : Architecture Globale du Système**
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   HRConnectPro Platform                  │
+│                   HRConnectPro Platform                 │
 ├─────────────────────────────────────────────────────────┤
-│                                                           │
+│                                                         │
 │  ┌──────────────────┐       ┌──────────────────┐        │
 │  │ Employee Service │       │  Leave Service   │        │
-│  │   (Port 8081)   │       │   (Port 8082)   │        │
-│  └────────┬─────────┘       └────────┬─────────┘        │
-│           │                          │                   │
-│           ├──────────────────────────┤                   │
-│           │     Event Bus (Kafka)    │                   │
-│           └──────────────────────────┘                   │
-│                      │                                   │
-│           ┌──────────┴──────────┐                        │
-│           │                     │                        │
-│  ┌────────▼────────┐   ┌───────▼────────┐              │
-│  │   PostgreSQL    │   │   PostgreSQL   │              │
-│  │ (employee schema)│   │ (leave schema) │              │
-│  └─────────────────┘   └────────────────┘              │
+│  │   (Port 8081)    │       │   (Port 9082)    │        │
+│  └────────┬────┬────┘       └────┬────┬────────┘        │
+│           │    │                 │    │                 │
+│           │    └─────────┬───────┘    │                 │
+│           │              │            │                 │
+│           │    ┌─────────▼────────┐   │                 │
+│           │    │ Event Bus (Kafka)│   │                 │
+│           │    └──────────────────┘   │                 │
+│           │                           │                 │
+│  ┌────────▼────────┐   ┌──────────────▼────┐            │
+│  │   PostgreSQL    │   │   PostgreSQL      │            │
+│  │(employee schema)│   │ (leave schema)    │            │
+│  └─────────────────┘   └───────────────────┘            │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -444,8 +444,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 Database: hrconnect
 ├── Schema: employee    (Service Employee)
 ├── Schema: leave       (Service Congés)
-├── Schema: payroll     (Service Paie)
-└── Schema: public      (Commun)
+└── Schema: public      (vide)
 ```
 
 **Avantages** :
