@@ -254,7 +254,7 @@ ORPHANS=$(docker exec hrconnect-postgres psql -U hrconnect -d hrconnect -t -A \
 # Pour chaque employé orphelin, créer les compteurs
 for REF in $ORPHANS; do
   echo "Réparation : $REF"
-  curl -X POST http://localhost:8082/api/leave-balances \
+  curl -X POST http://localhost:9082/api/leave-balances \
     -H "Content-Type: application/json" \
     -d "{
       \"employeeId\": \"$REF\",

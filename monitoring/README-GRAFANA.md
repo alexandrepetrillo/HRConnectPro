@@ -15,9 +15,7 @@ mvn clean install -DskipTests
 
 # 3. Démarrer les microservices (4 terminaux)
 cd employee/employee-service && mvn spring-boot:run   # Port 8081
-cd leave/leave-service && mvn spring-boot:run         # Port 8082
-cd interview/interview-service && mvn spring-boot:run # Port 8083
-cd payroll/payroll-service && mvn spring-boot:run     # Port 8084
+cd leave/leave-service && mvn spring-boot:run         # Port 9082
 
 # 4. Lancer la démo
 ./scripts/demo-grafana.sh

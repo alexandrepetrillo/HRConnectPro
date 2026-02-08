@@ -154,7 +154,7 @@ public class EmployeeService {
         // 2. Initialiser le compteur congés chez Leave-Service
         // ⚠️ HORS transaction ! Si cet appel échoue → INCOHÉRENCE
         restTemplate.postForObject(
-            "http://localhost:8082/api/leave-counters",
+            "http://localhost:9082/api/leave-counters",
             new LeaveCounterInit(employee.getReference(), 25, 12),
             Void.class
         );
@@ -209,7 +209,7 @@ curl -X POST http://localhost:8081/api/employees \
   -d '{"nom":"Alice","email":"alice@test.com"}'
 
 # 3. Vérifier le compteur → ✅ initialisé
-curl http://localhost:8082/api/leave-counters/EMP-001
+curl http://localhost:9082/api/leave-counters/EMP-001
 # → {"soldeCP": 25, "soldeRTT": 12}
 
 # 4. ARRÊTER Leave-Service
@@ -226,7 +226,7 @@ cd leave-service && mvn spring-boot:run &
 
 # 7. Vérifier : Bob existe mais n'a PAS de compteur !
 curl http://localhost:8081/api/employees/EMP-002  # → ✅ Bob existe
-curl http://localhost:8082/api/leave-counters/EMP-002  # → ❌ 404 Not Found
+curl http://localhost:9082/api/leave-counters/EMP-002  # → ❌ 404 Not Found
 
 # 8. Bob ne peut pas poser de congés → INCOHÉRENCE MÉTIER
 ```
