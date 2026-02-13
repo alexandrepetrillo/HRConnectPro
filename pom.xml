@@ -28,6 +28,7 @@
         <!-- Modules métier -->
         <module>employee</module>
         <module>leave</module>
+        <module>payroll</module>
     </modules>
 
     <!-- Les properties et dependencyManagement sont maintenant dans pom-parent -->

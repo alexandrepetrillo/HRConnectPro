@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hrconnect</groupId>
+        <artifactId>payroll</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>payroll-service</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Payroll Service</name>
+    <description>Microservice de gestion des congés</description>
+
+    <dependencies>
+        <!-- Dépendance vers les contrats -->
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>employee-contract</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>payroll-contract</artifactId>
+        </dependency>
+
+        <!-- Dépendances vers le socle technique -->
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>socle-persistence</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>socle-kafka</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>socle-security</artifactId>
+        </dependency>
+
+        <!-- Lombok (annotation processor - doit être déclaré explicitement) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>com.hrconnect</groupId>
+            <artifactId>socle-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+

@@ -101,6 +101,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.hrconnect</groupId>
+                <artifactId>payroll-contract</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Lombok -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
