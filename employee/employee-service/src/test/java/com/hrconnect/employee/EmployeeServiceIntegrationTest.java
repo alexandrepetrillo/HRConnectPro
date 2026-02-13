@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -29,6 +30,9 @@ class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
       .reference("E001")
       .nom("Dupont")
       .email("alice.dupont@company.com")
+      .telephone("+33123456789")
+      .dateNaissance(LocalDate.now())
+      .numeroSecuriteSociale("123456789012012")
       .telephone("+33123456789")
       .role("Manager")
       .departement("IT")
@@ -137,5 +141,72 @@ class EmployeeServiceIntegrationTest extends AbstractIntegrationTest {
 
     // Then - Doit retourner 403 Forbidden
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+  }
+
+  @Test
+  void findActifs() {
+    LocalDate now = LocalDate.of(2022, 3, 1);
+    LocalDate yesterday = now.minusDays(1);
+    LocalDate beforeYesterday = now.minusDays(2);
+    LocalDate tomorrow = now.plusDays(1);
+    LocalDate future = now.plusDays(5);
+
+    // Cas ACTIFS (doivent être retournés)
+    Employee e1 = createEmployee(yesterday, null);      // debut < now, fin = null
+    Employee e3 = createEmployee(now, null);            // debut = now, fin = null (cas limite début)
+    Employee e3bis = createEmployee(yesterday, now);    // debut < now, fin = now (cas limite fin)
+    Employee e4 = createEmployee(yesterday, future);    // debut < now, fin > now
+    Employee e6 = createEmployee(now, now);             // debut = now, fin = now (contrat d'un jour)
+    Employee e7 = createEmployee(now, future);          // debut = now, fin > now
+
+    // Cas NON ACTIFS (ne doivent pas être retournés)
+    Employee e2 = createEmployee(tomorrow, null);       // debut > now (contrat pas encore commencé)
+    Employee e5 = createEmployee(beforeYesterday, yesterday); // fin < now (contrat terminé)
+    Employee e8 = createEmployee(tomorrow, future);     // debut > now, fin > now (contrat futur)
+
+    assertThat(employeeRepository.findActifs(now)).containsExactlyInAnyOrder(e1, e3, e3bis, e4, e6, e7);
+  }
+
+
+  @Test
+  void findByContratDebutBeforeAndContratFinAfter() {
+    LocalDate now = LocalDate.of(2022, 3, 1);
+    LocalDate yesterday = now.minusDays(1);
+    LocalDate beforeYesterday = now.minusDays(2);
+    LocalDate tomorrow = now.plusDays(1);
+    LocalDate future = now.plusDays(5);
+
+    // Cas ACTIFS (doivent être retournés)
+    Employee e1 = createEmployee(yesterday, null);      // debut < now, fin = null
+    Employee e3 = createEmployee(now, null);            // debut = now, fin = null (cas limite début)
+    Employee e3bis = createEmployee(yesterday, now);    // debut < now, fin = now (cas limite fin)
+    Employee e4 = createEmployee(yesterday, future);    // debut < now, fin > now
+    Employee e6 = createEmployee(now, now);             // debut = now, fin = now (contrat d'un jour)
+    Employee e7 = createEmployee(now, future);          // debut = now, fin > now
+
+    // Cas NON ACTIFS (ne doivent pas être retournés)
+    Employee e2 = createEmployee(tomorrow, null);       // debut > now (contrat pas encore commencé)
+    Employee e5 = createEmployee(beforeYesterday, yesterday); // fin < now (contrat terminé)
+    Employee e8 = createEmployee(tomorrow, future);     // debut > now, fin > now (contrat futur)
+
+    assertThat(employeeRepository.findByContratDebutBeforeAndContratFinAfter(now, now)).containsExactlyInAnyOrder(e1, e3, e3bis, e4, e6, e7);
+  }
+
+  private Employee createEmployee(LocalDate debut, LocalDate fin) {
+    Employee employee = Employee.builder()
+      .reference("E002" + System.nanoTime() % 1000)
+      .nom("Martin")
+      .email("bob.martin@company.com" + System.nanoTime() % 1000)
+      .role("Developer")
+      .departement("IT")
+      .contrat(Employee.Contrat.builder()
+        .type("CDI")
+        .debut(debut)
+        .fin(fin)
+        .build())
+      .salaireAnnuelBase(42000.0)
+      .build();
+    employeeRepository.save(employee);
+    return employee;
   }
 }

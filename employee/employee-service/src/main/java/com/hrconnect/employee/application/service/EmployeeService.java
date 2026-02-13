@@ -8,9 +8,11 @@ import com.hrconnect.employee.infrastructure.external.SecuVerificationResponse;
 import com.hrconnect.employee.infrastructure.kafka.EmployeeEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,10 +45,10 @@ public class EmployeeService {
 
   /**
    * Crée un nouvel employé et publie l'événement sur Kafka
-   *
+   * <p>
    * ✅ L'événement est automatiquement publié APRÈS le commit de la transaction
-   *    grâce au TransactionSynchronizationManager
-   *
+   * grâce au TransactionSynchronizationManager
+   * <p>
    * Séquence :
    * 1. Appel à EmployeeCreationService (transactionnel)
    * 2. Enregistrement de la publication Kafka pour après le commit
@@ -92,7 +94,7 @@ public class EmployeeService {
 
   /**
    * Met à jour un employé existant et publie l'événement
-   *
+   * <p>
    * ✅ L'événement est automatiquement publié APRÈS le commit de la transaction
    */
   @Transactional
@@ -134,6 +136,18 @@ public class EmployeeService {
     employeeRepository.delete(employee);
 
     log.info("Employee deleted: {}", reference);
+  }
+
+  public int republish() {
+    LocalDate now = LocalDate.now();
+    List<Employee> employees = employeeRepository.findActifs(now);
+    for (Employee employee : employees) {
+      employeeEventPublisher.publishEmployeeState(employee);
+    }
+    int size = employees.size();
+    String name = SecurityContextHolder.getContext().getAuthentication().getName();
+    log.info("Republication triggered by {} for {} employees", name, size);
+    return size;
   }
 }
 
