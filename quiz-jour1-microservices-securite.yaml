@@ -1,0 +1,206 @@
+# Quiz Jour 1 - Microservices & Sécurité
+# Formation HRConnectPro - 20 questions
+
+title: "Quiz Jour 1 - Microservices & Sécurité"
+description: "Évaluez vos connaissances sur l'architecture microservices, la sécurité LDAP/JWT et la communication HTTP"
+
+questions:
+  # Section 1 : Architecture Microservices (5 questions)
+
+  - text: "Quel est l'avantage principal d'une architecture microservices par rapport à un monolithe ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Moins de code à écrire"
+      - "Déploiement indépendant de chaque service"
+      - "Pas besoin de base de données"
+      - "Plus simple à développer"
+    correctAnswer: 1
+
+  - text: "Flyway est utilisé pour :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Créer des API REST"
+      - "Gérer les versions de schéma de base de données"
+      - "Orchestrer les conteneurs Docker"
+      - "Sécuriser les endpoints"
+    correctAnswer: 1
+
+  - text: "Dans Docker Compose, à quoi sert la directive `depends_on` ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Définir l'ordre de démarrage des conteneurs"
+      - "Créer des dépendances Maven"
+      - "Configurer les variables d'environnement"
+      - "Mapper les ports réseau"
+    correctAnswer: 0
+
+  - text: "Quelle annotation Spring permet de déclarer un contrôleur REST ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "@Service"
+      - "@Repository"
+      - "@RestController"
+      - "@Component"
+    correctAnswer: 2
+
+  - text: "Dans une architecture microservices, chaque service doit idéalement avoir sa propre base de données."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  # Section 2 : Sécurité LDAP & JWT (8 questions)
+
+  - text: "Que signifie LDAP ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Lightweight Directory Access Protocol"
+      - "Linux Database Access Protocol"
+      - "Local Data Application Process"
+      - "Long Distance Authentication Protocol"
+    correctAnswer: 0
+
+  - text: "Un JWT (JSON Web Token) est composé de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Header uniquement"
+      - "Header et Payload"
+      - "Header, Payload et Signature"
+      - "Payload et Signature"
+    correctAnswer: 2
+
+  - text: "Quelle annotation Spring Security permet de sécuriser un endpoint pour un rôle spécifique ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "@Secured(\"ROLE_ADMIN\")"
+      - "@Role(\"ADMIN\")"
+      - "@Authority(\"ADMIN\")"
+      - "@Permission(\"ADMIN\")"
+    correctAnswer: 0
+
+  - text: "Dans HRConnectPro, où est stocké le mot de passe de l'utilisateur ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Dans PostgreSQL"
+      - "Dans le JWT"
+      - "Dans LDAP"
+      - "Dans Redis"
+    correctAnswer: 2
+
+  - text: "Le JWT doit être envoyé dans quel header HTTP ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "X-Auth-Token"
+      - "Authorization"
+      - "Authentication"
+      - "Bearer-Token"
+    correctAnswer: 1
+
+  - text: "Quel est le format du token dans le header Authorization ?"
+    type: REPONSE_COURTE
+    timeLimit: 30
+    points: 1000
+    acceptedAnswers:
+      - "Bearer <jwt>"
+      - "Bearer"
+      - "bearer <jwt>"
+      - "Bearer <token>"
+
+  - text: "La signature du JWT permet de vérifier l'intégrité du token."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Spring Security utilise quel concept pour représenter l'utilisateur authentifié ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "User"
+      - "Principal"
+      - "Identity"
+      - "Subject"
+    correctAnswer: 1
+
+  # Section 3 : Communication HTTP & Problèmes (7 questions)
+
+  - text: "RestTemplate en Spring permet de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Créer des templates HTML"
+      - "Faire des appels HTTP synchrones"
+      - "Gérer les transactions"
+      - "Configurer les routes"
+    correctAnswer: 1
+
+  - text: "Si on fait un appel HTTP DANS une transaction et que le COMMIT échoue, l'appel HTTP est déjà parti."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Si on fait un appel HTTP APRÈS une transaction et que l'appel échoue, on peut facilement rollback la transaction."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: false
+
+  - text: "Les ÉTAPES 03a et 03b du cours démontrent :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Les bonnes pratiques à suivre"
+      - "Des anti-patterns à éviter"
+      - "Comment utiliser Kafka"
+      - "La configuration Docker"
+    correctAnswer: 1
+
+  - text: "Kafka est introduit pour résoudre :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Les problèmes de sécurité"
+      - "Les problèmes de désynchronisation transactionnelle"
+      - "Les problèmes de performance"
+      - "Les problèmes de déploiement"
+    correctAnswer: 1
+
+  - text: "Un topic Kafka est :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Une file d'attente de messages"
+      - "Une table de base de données"
+      - "Un endpoint REST"
+      - "Un conteneur Docker"
+    correctAnswer: 0
+
+  - text: "L'idempotence dans Kafka signifie que traiter le même message plusieurs fois donne le même résultat."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true

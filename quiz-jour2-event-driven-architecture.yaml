@@ -1,0 +1,214 @@
+# Quiz Jour 2 - Event-Driven & Architecture
+# Formation HRConnectPro - 20 questions
+
+title: "Quiz Jour 2 - Event-Driven & Architecture"
+description: "Évaluez vos connaissances sur Kafka avancé, le multi-module Maven et le soclage technique"
+
+questions:
+  # Section 1 : Kafka Avancé (7 questions)
+
+  - text: "L'eventual consistency signifie :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Les données sont toujours cohérentes immédiatement"
+      - "Les données deviennent cohérentes après un certain délai"
+      - "Les données ne sont jamais cohérentes"
+      - "Les données sont stockées dans un cache"
+    correctAnswer: 1
+
+  - text: "Dans HRConnectPro, la table `employee_snapshot` dans leave-service contient :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Une copie complète de la table employees"
+      - "Une projection des données nécessaires à leave-service"
+      - "Les logs des employés"
+      - "Les sauvegardes"
+    correctAnswer: 1
+
+  - text: "Le pattern Outbox consiste à :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Envoyer des emails"
+      - "Stocker les événements à publier dans la même transaction que les données métier"
+      - "Utiliser un cache externe"
+      - "Créer des backups"
+    correctAnswer: 1
+
+  - text: "`TransactionSynchronization` en Spring permet de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Synchroniser les threads"
+      - "Exécuter du code après le COMMIT d'une transaction"
+      - "Créer des transactions distribuées"
+      - "Verrouiller les tables"
+    correctAnswer: 1
+
+  - text: "Dans Kafka, une partition permet de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Diviser les messages pour la scalabilité"
+      - "Créer des backups"
+      - "Sécuriser les messages"
+      - "Compresser les données"
+    correctAnswer: 0
+
+  - text: "L'offset dans Kafka représente la position d'un message dans une partition."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Pour garantir l'idempotence avec Kafka, on stocke :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Le timestamp"
+      - "La partition et l'offset"
+      - "Le payload complet"
+      - "L'adresse IP"
+    correctAnswer: 1
+
+  # Section 2 : Multi-Module Maven (7 questions)
+
+  - text: "Un module Maven \"contract\" contient :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Les controllers REST"
+      - "Les DTOs et événements partagés"
+      - "La logique métier"
+      - "Les tests"
+    correctAnswer: 1
+
+  - text: "Le versioning sémantique (semver) suit le format :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "MAJOR.MINOR"
+      - "YEAR.MONTH.DAY"
+      - "MAJOR.MINOR.PATCH"
+      - "VERSION.BUILD"
+    correctAnswer: 2
+
+  - text: "Si on modifie un champ dans un événement partagé et que ça casse la compatibilité, quelle version incrémente-t-on ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "PATCH (0.0.1 → 0.0.2)"
+      - "MINOR (0.1.0 → 0.2.0)"
+      - "MAJOR (1.0.0 → 2.0.0)"
+      - "On ne change pas la version"
+    correctAnswer: 2
+
+  - text: "L'avantage principal du multi-module Maven est de détecter les incompatibilités à la compilation."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Quelle est la commande Git pour déplacer un fichier en préservant l'historique ?"
+    type: REPONSE_COURTE
+    timeLimit: 30
+    points: 1000
+    acceptedAnswers:
+      - "git mv"
+      - "git move"
+
+  - text: "Dans un POM parent, on centralise :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Le code Java"
+      - "Les versions des dépendances"
+      - "Les tests"
+      - "Les Dockerfile"
+    correctAnswer: 1
+
+  - text: "Un module \"contract\" doit être :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Léger et sans dépendances lourdes"
+      - "Contenir toute la logique métier"
+      - "Inclure Spring Boot Starter"
+      - "Avoir sa propre base de données"
+    correctAnswer: 0
+
+  # Section 3 : Soclage Technique (6 questions)
+
+  - text: "Un socle technique permet de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Mutualiser le code technique transverse"
+      - "Stocker les données métier"
+      - "Remplacer Spring Boot"
+      - "Créer des API REST"
+    correctAnswer: 0
+
+  - text: "`@AutoConfiguration` en Spring Boot permet de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Configurer automatiquement les beans au démarrage"
+      - "Générer du code automatiquement"
+      - "Créer des contrôleurs"
+      - "Gérer les transactions"
+    correctAnswer: 0
+
+  - text: "`@ConditionalOnClass` active un bean seulement si une classe spécifique est présente dans le classpath."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Le module `socle-security` contient :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Les DTOs métier"
+      - "La configuration JWT et Spring Security"
+      - "Les contrôleurs REST"
+      - "Les migrations Flyway"
+    correctAnswer: 1
+
+  - text: "Avec un socle technique bien conçu, créer un nouveau microservice prend :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Plusieurs jours"
+      - "Environ 1 heure"
+      - "Quelques minutes"
+      - "Plusieurs semaines"
+    correctAnswer: 2
+
+  - text: "Le module `socle-kafka` garantit la publication Kafka après COMMIT en utilisant :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Un scheduler"
+      - "TransactionSynchronization"
+      - "Un cache Redis"
+      - "Un worker asynchrone"
+    correctAnswer: 1

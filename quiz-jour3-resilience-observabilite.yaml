@@ -1,0 +1,207 @@
+# Quiz Jour 3 - Résilience & Observabilité
+# Formation HRConnectPro - 20 questions
+
+title: "Quiz Jour 3 - Résilience & Observabilité"
+description: "Évaluez vos connaissances sur le Circuit Breaker, la DLQ Kafka et l'observabilité avec Jaeger/Grafana"
+
+questions:
+  # Section 1 : Circuit Breaker & Resilience4j (7 questions)
+
+  - text: "Quel est le rôle principal d'un Circuit Breaker ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Compresser les données"
+      - "Couper les appels vers un service défaillant pour éviter l'effondrement"
+      - "Chiffrer les communications"
+      - "Créer des logs"
+    correctAnswer: 1
+
+  - text: "Quels sont les trois états du Circuit Breaker ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "OPEN, CLOSED, LOCKED"
+      - "START, STOP, PAUSE"
+      - "CLOSED, OPEN, HALF_OPEN"
+      - "ACTIVE, INACTIVE, PENDING"
+    correctAnswer: 2
+
+  - text: "Resilience4j est le successeur spirituel de quelle bibliothèque ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Apache Camel"
+      - "Netflix Hystrix"
+      - "Spring Retry"
+      - "RxJava"
+    correctAnswer: 1
+
+  - text: "Quand le Circuit Breaker passe en état OPEN :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Les appels sont bloqués et le fallback est appelé immédiatement"
+      - "Les appels continuent normalement"
+      - "Le service redémarre automatiquement"
+      - "Les logs sont désactivés"
+    correctAnswer: 0
+
+  - text: "Le paramètre `failureRateThreshold: 50` signifie que le circuit s'ouvre si 50% des appels échouent."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Qu'est-ce qu'un fallback dans le contexte du Circuit Breaker ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Une erreur qui fait tomber le système"
+      - "Une réponse de secours quand le service externe est indisponible"
+      - "Un backup de base de données"
+      - "Un test unitaire"
+    correctAnswer: 1
+
+  - text: "Le pattern Retry avec exponential backoff signifie que le délai entre les tentatives augmente exponentiellement."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  # Section 2 : Dead Letter Queue (DLQ) (6 questions)
+
+  - text: "Une Dead Letter Queue (DLQ) sert à :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Envoyer des emails automatiques"
+      - "Stocker les messages Kafka en erreur pour analyse et replay"
+      - "Créer des backups"
+      - "Chiffrer les messages"
+    correctAnswer: 1
+
+  - text: "Quel est l'avantage principal d'une DLQ en base de données par rapport à un topic Kafka dédié ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Plus rapide"
+      - "Permet des requêtes SQL, filtrage et gestion de statut"
+      - "Moins d'espace disque"
+      - "Meilleure compression"
+    correctAnswer: 1
+
+  - text: "Dans HRConnectPro, la DLQ stocke les informations suivantes SAUF :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Le payload JSON du message"
+      - "La stack trace de l'erreur"
+      - "Le mot de passe de l'utilisateur"
+      - "Le traceId pour corrélation"
+    correctAnswer: 2
+
+  - text: "Le statut initial d'un message en DLQ est PENDING."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Quelles sont les actions possibles sur un message en DLQ ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Uniquement le supprimer"
+      - "Replay (rejouer), Ignore (ignorer), Reset (réinitialiser)"
+      - "Uniquement l'envoyer par email"
+      - "Uniquement le compresser"
+    correctAnswer: 1
+
+  - text: "Le module `socle-kafka` dans HRConnectPro fournit la DLQ de manière automatique à tous les microservices."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  # Section 3 : Observabilité - Les 3 Piliers (7 questions)
+
+  - text: "Quels sont les trois piliers de l'observabilité ?"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "CPU, RAM, Disque"
+      - "Logs, Métriques, Traces"
+      - "Input, Output, Processing"
+      - "Frontend, Backend, Database"
+    correctAnswer: 1
+
+  - text: "Prometheus est utilisé pour :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Le tracing distribué"
+      - "La centralisation des logs"
+      - "La collecte et le stockage des métriques"
+      - "L'authentification"
+    correctAnswer: 2
+
+  - text: "Jaeger est un outil de :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Gestion de base de données"
+      - "Tracing distribué"
+      - "Déploiement continu"
+      - "Tests automatisés"
+    correctAnswer: 1
+
+  - text: "Le traceId permet de corréler les requêtes à travers plusieurs microservices."
+    type: VRAI_FAUX
+    timeLimit: 20
+    points: 1000
+    correctAnswer: true
+
+  - text: "Grafana est utilisé pour :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Compiler le code Java"
+      - "Visualiser les métriques via des dashboards"
+      - "Gérer les conteneurs Docker"
+      - "Créer des migrations de base de données"
+    correctAnswer: 1
+
+  - text: "Quel endpoint Spring Boot Actuator expose les métriques au format Prometheus ?"
+    type: REPONSE_COURTE
+    timeLimit: 30
+    points: 1000
+    acceptedAnswers:
+      - "/actuator/prometheus"
+      - "actuator/prometheus"
+      - "prometheus"
+      - "/prometheus"
+
+  - text: "Loki est utilisé pour :"
+    type: QCM
+    timeLimit: 30
+    points: 1000
+    answers:
+      - "Le tracing distribué"
+      - "La centralisation et l'indexation des logs"
+      - "La gestion des secrets"
+      - "L'orchestration des conteneurs"
+    correctAnswer: 1
+
