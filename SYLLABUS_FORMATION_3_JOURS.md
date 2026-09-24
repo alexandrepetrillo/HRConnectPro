@@ -6,6 +6,475 @@
 
 ---
 
+## 🎯 Compétences Visées
+
+À l'issue de cette formation, les participants seront capables de :
+
+### 🏗️ Architecture Microservices
+- **C1** - Concevoir et implémenter une architecture microservices avec Spring Boot
+- **C2** - Structurer un projet Maven multi-module avec gestion centralisée des dépendances
+- **C3** - Orchestrer des conteneurs Docker avec Docker Compose
+- **C4** - Gérer les migrations de schéma de base de données avec Flyway
+
+### 🔐 Sécurité
+- **C5** - Configurer l'authentification LDAP avec OpenLDAP
+- **C6** - Implémenter la génération et validation de tokens JWT
+- **C7** - Sécuriser les endpoints REST avec Spring Security et gestion des rôles
+- **C8** - Propager le contexte de sécurité entre microservices
+
+### 📡 Communication Inter-Services
+- **C9** - Identifier les anti-patterns de communication synchrone (HTTP dans/après transaction)
+- **C10** - Implémenter une architecture événementielle (Event-Driven) avec Apache Kafka
+- **C11** - Gérer les événements snapshot et la cohérence à terme (Eventual Consistency)
+- **C12** - Appliquer le pattern Outbox pour garantir la cohérence transactionnelle
+
+### 📦 Modularisation & Réutilisation
+- **C13** - Créer des modules "contract" pour le partage d'événements entre services
+- **C14** - Développer un socle technique transverse avec auto-configuration Spring Boot
+- **C15** - Mutualiser les composants communs (sécurité, Kafka, persistence, tests)
+
+### 🔗 Intégration Services Externes
+- **C16** - Intégrer des services REST externes avec gestion des erreurs
+- **C17** - Utiliser WireMock pour simuler des services tiers en développement/test
+- **C18** - Implémenter le pattern Circuit Breaker avec Resilience4j
+- **C19** - Configurer des fallbacks et modes dégradés
+
+### 🔄 Gestion des Erreurs Asynchrones
+- **C20** - Implémenter le pattern Dead Letter Queue (DLQ) pour Kafka
+- **C21** - Développer une API de gestion et replay des messages en erreur
+- **C22** - Mettre en place des stratégies de retry automatique
+
+### 📊 Observabilité
+- **C23** - Collecter et exploiter des métriques avec Prometheus et Micrometer
+- **C24** - Créer des dashboards de monitoring avec Grafana
+- **C25** - Implémenter le tracing distribué avec Jaeger et OpenTelemetry
+- **C26** - Agréger et corréler les logs avec Loki et traceId
+- **C27** - Identifier et analyser les problèmes de performance (bottlenecks)
+
+### 🛠️ Bonnes Pratiques & Méthodologie
+- **C28** - Appliquer les principes du CAP theorem et comprendre les trade-offs
+- **C29** - Écrire des tests d'intégration avec @SpringBootTest et TestContainers
+- **C30** - Utiliser les patterns de résilience adaptés à chaque situation
+
+---
+
+## 📋 Prérequis
+
+### 💡 Connaissances Techniques Requises
+
+#### Indispensables ✅
+- **Java** : Maîtrise de Java 17+ (lambdas, streams, annotations)
+- **Spring Framework** : Connaissance de Spring Core (IoC, DI, annotations)
+- **Spring Boot** : Expérience avec les applications Spring Boot (starters, configuration, actuator)
+- **API REST** : Compréhension des principes REST et des codes HTTP
+- **Maven** : Utilisation de Maven pour la gestion de dépendances
+- **SQL** : Bases de données relationnelles et requêtes SQL
+- **Git** : Utilisation basique (clone, commit, pull, push)
+- **Linux/Shell** : Navigation en ligne de commande, exécution de scripts bash
+
+#### Recommandées 💡
+- **JPA/Hibernate** : Mapping objet-relationnel
+- **Docker** : Concepts de base des conteneurs (images, volumes, networks)
+- **JSON** : Format de données et sérialisation/désérialisation
+- **Patterns de conception** : Singleton, Factory, Builder, etc.
+- **Tests unitaires** : JUnit 5, Mockito
+
+---
+
+### 🛠️ Logiciels et Outils à Installer
+
+#### Obligatoires 🔴
+
+| Outil | Version Minimale | Usage |
+|-------|------------------|-------|
+| **JDK** | 17+ | Compilation et exécution du code Java |
+| **Maven** | 3.8+ | Build et gestion des dépendances |
+| **Docker** | 20.10+ | Conteneurisation des services |
+| **Docker Compose** | 2.0+ | Orchestration multi-conteneurs |
+| **Git** | 2.30+ | Gestion de versions |
+| **IDE** | IntelliJ IDEA / Eclipse / VS Code | Développement (IntelliJ recommandé) |
+
+#### Installation et Configuration
+```bash
+# Vérifier les versions installées
+java -version          # Doit afficher Java 17 ou supérieur
+mvn -version           # Doit afficher Maven 3.8+
+docker --version       # Doit afficher Docker 20.10+
+docker compose version # Doit afficher Compose 2.0+
+git --version          # Doit afficher Git 2.30+
+```
+
+#### Recommandés 💡
+- **Postman** ou **Insomnia** : Tests d'API REST
+- **DBeaver** ou **pgAdmin** : Client PostgreSQL pour explorer les données
+- **Navigateur moderne** : Chrome/Firefox pour accéder aux interfaces (Grafana, Jaeger, etc.)
+
+---
+
+## 📊 Tableau Synthétique des Séquences de Formation
+
+| N° | Intitulé de séquence | Durée (h) | Objectifs / Compétences | Méthode Pédagogique | Forme d'évaluation |
+|----|---------------------|-----------|-------------------------|---------------------|-------------------|
+| **JOUR 1 - Fondamentaux Microservices & Sécurité** | **7h00** |
+| 1 | Accueil & Introduction | 0h30 | Comprendre l'architecture globale | Présentation magistrale | Participation |
+| 2 | Architecture Microservices | 1h30 | **C1, C2, C3, C4** - Maîtriser les fondamentaux | Cours + Exploration + Live Coding | Exercice pratique |
+| 3 | Sécurité LDAP & JWT | 1h45 | **C5, C6, C7, C8** - Authentification et autorisation | Cours + Exploration + Live Coding | Exercice pratique |
+| 4 | Communication HTTP & Problèmes | 1h30 | **C9** - Identifier les anti-patterns | Cours + Exploration + Démonstration | Discussion interactive |
+| 5 | Introduction à Kafka | 1h45 | **C10, C11** - Architecture événementielle | Cours + Exploration + Live Coding | Exercice pratique |
+| 6 | QCM Jour 1 & Récapitulatif | 0h30 | Évaluation des acquis du jour | QCM + Discussion | **QCM (20 questions)** |
+| **JOUR 2 - Event-Driven Architecture & Résilience** | **7h00** |
+| 7 | Récapitulatif Jour 1 | 0h15 | Consolidation des acquis | Discussion interactive | Q&R |
+| 8 | Kafka Avancé & Eventual Consistency | 1h30 | **C11, C12** - Pattern Outbox et cohérence à terme | Cours + Exploration + Live Coding | Exercice pratique |
+| 9 | Architecture Multi-Module Maven | 2h00 | **C13** - Modules contract et versioning | Cours + Exploration + Live Coding | Exercice pratique |
+| 10 | **Soclage Technique** | **2h00** | **C14, C15, C29** - Mutualisation et auto-configuration | Cours + Exploration + Live Coding | **Exercice majeur** |
+| 11 | Services Externes & WireMock | 1h15 | **C16, C17** - Intégration et simulation | Cours + Exploration + Live Coding | Exercice pratique |
+| 12 | QCM Jour 2 & Récapitulatif | 0h30 | Évaluation des acquis du jour | QCM + Discussion | **QCM (20 questions)** |
+| **JOUR 3 - Résilience & Observabilité** | **7h00** |
+| 13 | Récapitulatif Jour 2 | 0h15 | Consolidation des acquis | Discussion interactive | Q&R |
+| 14 | Circuit Breaker & Resilience4j | 1h45 | **C18, C19, C30** - Pattern Circuit Breaker | Cours + Exploration + Live Coding | Exercice pratique |
+| 15 | Dead Letter Queue (DLQ) | 1h45 | **C20, C21, C22** - Gestion des erreurs Kafka | Cours + Exploration + Live Coding | Exercice pratique |
+| 16 | Observabilité | 2h30 | **C23, C24, C25, C26, C27** - Logs, Métriques, Traces | Cours + Exploration + Live Coding | Exercice pratique |
+| 17 | Synthèse & Bonnes Pratiques | 0h45 | **C28, C30** - Patterns et recommandations | Cours magistral + Discussion | Discussion interactive |
+| 18 | QCM Jour 3 & Présentation TP | 0h30 | Évaluation finale | QCM + Présentation | **QCM (20 questions)** |
+| **TOTAL FORMATION** | **21h00** | **30 compétences** | **Structure A-B-C (30% théorie, 40% exploration, 30% pratique)** | **3 QCM + 11 exercices** |
+
+### 📈 Synthèse de la Formation
+
+| Indicateur | Détail |
+|------------|--------|
+| **Durée totale** | 21 heures (hors pauses et déjeuners) |
+| **Nombre de modules** | 11 modules principaux + 7 séquences administratives |
+| **Compétences visées** | 30 compétences professionnelles (C1 à C30) |
+| **Répartition pédagogique** | 30% Théorie - 40% Exploration code - 30% Live Coding |
+| **Évaluations** | 3 QCM (60 questions) + 11 exercices pratiques |
+| **Exercices Live Coding** | 11 exercices guidés dont 1 exercice majeur (création microservice complet) |
+| **Technologies couvertes** | Spring Boot, Kafka, Docker, JWT/LDAP, Resilience4j, Prometheus, Grafana, Jaeger |
+
+### 🎯 Légende des Compétences
+
+| Code | Catégorie | Compétences |
+|------|-----------|-------------|
+| **C1-C4** | Architecture Microservices | Spring Boot, Maven multi-module, Docker, Flyway |
+| **C5-C8** | Sécurité | LDAP, JWT, Spring Security, propagation de contexte |
+| **C9-C12** | Communication Inter-Services | Anti-patterns HTTP, Kafka, Eventual Consistency, Pattern Outbox |
+| **C13-C15** | Modularisation & Réutilisation | Modules contract, socle technique, auto-configuration |
+| **C16-C19** | Intégration Services Externes | REST, WireMock, Circuit Breaker, fallbacks |
+| **C20-C22** | Gestion Erreurs Asynchrones | DLQ, replay de messages, retry automatique |
+| **C23-C27** | Observabilité | Prometheus, Grafana, Jaeger, Loki, analyse de performance |
+| **C28-C30** | Bonnes Pratiques | CAP theorem, tests d'intégration, patterns de résilience |
+
+---
+
+## 💻 Configuration Matérielle Recommandée
+
+| Composant | Minimum | Recommandé |
+|-----------|---------|------------|
+| **CPU** | 4 cœurs | 8 cœurs |
+| **RAM** | 8 GB | 16 GB |
+| **Disque** | 20 GB libres | 50 GB libres SSD |
+| **OS** | Windows 10/11, macOS 11+, Linux (Ubuntu 20.04+) | Linux ou macOS |
+
+**Note** : Docker avec plusieurs conteneurs (PostgreSQL, Kafka, Zookeeper, Grafana, Prometheus, Jaeger, Loki) est gourmand en ressources.
+
+---
+
+### 📦 Préparation Avant la Formation
+
+#### 1️⃣ Cloner le Projet HRConnectPro
+```bash
+git clone https://github.com/votre-organisation/HRConnectPro.git
+cd HRConnectPro
+```
+
+#### 2️⃣ Compiler le Projet
+```bash
+mvn clean install
+```
+✅ **Succès attendu** : `BUILD SUCCESS` pour tous les modules
+
+#### 3️⃣ Démarrer l'Infrastructure
+```bash
+./start-infra.sh
+```
+✅ **Succès attendu** : 10+ conteneurs Docker démarrés
+
+#### 4️⃣ Vérifier les Services
+- **PostgreSQL** : `docker exec -it hrconnect-postgres psql -U hrconnect -d hrconnect_employee`
+- **Kafka UI** : http://localhost:8080
+- **Grafana** : http://localhost:3000 (admin/admin)
+- **Jaeger** : http://localhost:16686
+- **Prometheus** : http://localhost:9090
+
+#### 5️⃣ Tester une API
+```bash
+# Démarrer employee-service
+cd employee/employee-service
+mvn spring-boot:run
+
+# Dans un autre terminal
+curl http://localhost:8081/api/employees
+```
+✅ **Succès attendu** : Réponse JSON avec la liste des employés
+
+---
+
+## 📚 Bibliographie
+
+### 📖 Ouvrages de Référence
+
+#### Microservices & Architecture
+
+**1. Microservices Patterns: With examples in Java**
+- **Auteur** : Chris Richardson
+- **Éditeur** : Manning Publications, 2018
+- **ISBN** : 978-1617294549
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Essentiel)
+- **Chapitres recommandés** : 
+  - Chapitre 1 : Escaping monolithic hell
+  - Chapitre 3 : Interprocess communication in a microservice architecture
+  - Chapitre 4 : Managing transactions with sagas
+  - Chapitre 6 : Developing business logic with event sourcing
+- **Lien** : https://microservices.io/book
+
+**2. Building Microservices: Designing Fine-Grained Systems (2nd Edition)**
+- **Auteur** : Sam Newman
+- **Éditeur** : O'Reilly Media, 2021
+- **ISBN** : 978-1492034025
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Essentiel)
+- **Chapitres recommandés** :
+  - Chapitre 1-2 : What Are Microservices? / How to Model Microservices
+  - Chapitre 4 : Microservice Communication Styles
+  - Chapitre 8 : Testing
+  - Chapitre 11 : Security
+- **Lien** : https://samnewman.io/books/building_microservices_2nd_edition/
+
+**3. Spring Microservices in Action (2nd Edition)**
+- **Auteur** : John Carnell, Illary Huaylupo Sánchez
+- **Éditeur** : Manning Publications, 2021
+- **ISBN** : 978-1617296956
+- **Pertinence** : ⭐⭐⭐⭐ (Recommandé)
+- **Points forts** : Exemples pratiques avec Spring Boot, Spring Cloud, Resilience4j
+- **Lien** : https://www.manning.com/books/spring-microservices-in-action-second-edition
+
+#### Event-Driven Architecture & Kafka
+
+**4. Kafka: The Definitive Guide (2nd Edition)**
+- **Auteurs** : Gwen Shapira, Todd Palino, Rajini Sivaram, Krit Petty
+- **Éditeur** : O'Reilly Media, 2021
+- **ISBN** : 978-1492043089
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Essentiel)
+- **Chapitres clés** :
+  - Chapitre 3 : Kafka Producers
+  - Chapitre 4 : Kafka Consumers
+  - Chapitre 6 : Reliable Data Delivery
+- **Lien** : https://www.confluent.io/resources/kafka-the-definitive-guide/
+
+**5. Designing Event-Driven Systems**
+- **Auteur** : Ben Stopford
+- **Éditeur** : O'Reilly Media, 2018
+- **ISBN** : 978-1492038221
+- **Pertinence** : ⭐⭐⭐⭐ (Recommandé)
+- **Disponibilité** : Gratuit en ligne
+- **Lien** : https://www.confluent.io/designing-event-driven-systems/
+
+**6. Event-Driven Architecture: Building Loosely Coupled Software Systems**
+- **Auteur** : Thodoris Bais, Lukas Ruebbelke
+- **Éditeur** : O'Reilly Media, 2023
+- **ISBN** : 978-1098127428
+- **Pertinence** : ⭐⭐⭐⭐ (Recommandé)
+- **Points forts** : Patterns modernes, Kafka, Event Sourcing, CQRS
+
+#### Résilience & Patterns
+
+**7. Release It! Design and Deploy Production-Ready Software (2nd Edition)**
+- **Auteur** : Michael T. Nygard
+- **Éditeur** : Pragmatic Bookshelf, 2018
+- **ISBN** : 978-1680502398
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Essentiel)
+- **Chapitres clés** :
+  - Chapitre 5 : Stability Patterns (Circuit Breaker, Bulkheads, Timeouts)
+  - Chapitre 17 : Transparency
+- **Lien** : https://pragprog.com/titles/mnee2/release-it-second-edition/
+
+**8. Monolith to Microservices: Evolutionary Patterns to Transform Your Monolith**
+- **Auteur** : Sam Newman
+- **Éditeur** : O'Reilly Media, 2019
+- **ISBN** : 978-1492047841
+- **Pertinence** : ⭐⭐⭐ (Utile)
+- **Points forts** : Stratégies de migration progressive
+
+#### Observabilité & DevOps
+
+**9. Observability Engineering**
+- **Auteurs** : Charity Majors, Liz Fong-Jones, George Miranda
+- **Éditeur** : O'Reilly Media, 2022
+- **ISBN** : 978-1492076445
+- **Pertinence** : ⭐⭐⭐⭐ (Recommandé)
+- **Points forts** : Logs, Métriques, Traces distribuées
+- **Lien** : https://www.honeycomb.io/observability-engineering-oreilly-book
+
+**10. Prometheus: Up & Running (2nd Edition)**
+- **Auteurs** : Brian Brazil, Julien Pivotto
+- **Éditeur** : O'Reilly Media, 2022
+- **ISBN** : 978-1098131142
+- **Pertinence** : ⭐⭐⭐⭐ (Recommandé)
+- **Lien** : https://www.prometheusbook.com/
+
+---
+
+### 🌐 Ressources en Ligne & Documentation Officielle
+
+#### Documentation Technique
+
+| Ressource | URL | Pertinence |
+|-----------|-----|-----------|
+| **Spring Boot Reference** | https://docs.spring.io/spring-boot/docs/current/reference/html/ | ⭐⭐⭐⭐⭐ |
+| **Spring Security Reference** | https://docs.spring.io/spring-security/reference/ | ⭐⭐⭐⭐⭐ |
+| **Apache Kafka Documentation** | https://kafka.apache.org/documentation/ | ⭐⭐⭐⭐⭐ |
+| **Resilience4j User Guide** | https://resilience4j.readme.io/ | ⭐⭐⭐⭐⭐ |
+| **Micrometer Documentation** | https://micrometer.io/docs | ⭐⭐⭐⭐ |
+| **Grafana Documentation** | https://grafana.com/docs/ | ⭐⭐⭐⭐ |
+| **Jaeger Documentation** | https://www.jaegertracing.io/docs/ | ⭐⭐⭐⭐ |
+| **Docker Documentation** | https://docs.docker.com/ | ⭐⭐⭐⭐ |
+| **Flyway Documentation** | https://flywaydb.org/documentation/ | ⭐⭐⭐ |
+
+#### Blogs & Articles de Référence
+
+**11. Martin Fowler's Blog - Microservices Resource Guide**
+- **URL** : https://martinfowler.com/microservices/
+- **Articles clés** :
+  - Circuit Breaker Pattern
+  - Microservice Testing Strategies
+  - Event Sourcing
+  - CQRS Pattern
+- **Pertinence** : ⭐⭐⭐⭐⭐
+
+**12. The Twelve-Factor App**
+- **Auteur** : Adam Wiggins (Heroku)
+- **URL** : https://12factor.net/
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Méthodologie essentielle pour applications cloud-native)
+
+**13. Microservices.io - Pattern Catalog**
+- **Auteur** : Chris Richardson
+- **URL** : https://microservices.io/patterns/index.html
+- **Pertinence** : ⭐⭐⭐⭐⭐
+- **Points forts** : Catalogue complet des patterns microservices
+
+**14. Confluent Blog - Kafka Best Practices**
+- **URL** : https://www.confluent.io/blog/
+- **Articles recommandés** :
+  - "Kafka Producer Best Practices"
+  - "Kafka Consumer Configuration"
+  - "Event-Driven Microservices with Kafka"
+- **Pertinence** : ⭐⭐⭐⭐
+
+---
+
+### 📄 Articles Académiques & Whitepapers
+
+**15. CAP Theorem Explained**
+- **Auteur** : Eric Brewer (UC Berkeley)
+- **Conférence** : PODC 2000
+- **URL** : https://people.eecs.berkeley.edu/~brewer/cs262b-2004/PODC-keynote.pdf
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Fondamental)
+
+**16. Eventual Consistency**
+- **Auteur** : Werner Vogels (Amazon CTO)
+- **Publication** : ACM Queue, 2008
+- **URL** : https://queue.acm.org/detail.cfm?id=1466448
+- **Pertinence** : ⭐⭐⭐⭐
+
+**17. Transactional Outbox Pattern**
+- **Source** : Enterprise Integration Patterns
+- **URL** : https://microservices.io/patterns/data/transactional-outbox.html
+- **Pertinence** : ⭐⭐⭐⭐⭐ (Central pour ce cours)
+
+**18. Distributed Tracing in Practice**
+- **Source** : Google Research - Dapper Paper
+- **URL** : https://research.google/pubs/pub36356/
+- **Pertinence** : ⭐⭐⭐⭐ (Base de Jaeger/Zipkin)
+
+---
+
+### 🎥 Vidéos & Conférences
+
+**19. SpringOne Platform - Conférences**
+- **URL** : https://springone.io/
+- **Vidéos recommandées** :
+  - "Building Reactive Microservices with Spring Boot"
+  - "Spring Security Best Practices"
+  - "Distributed Tracing with Spring Cloud Sleuth"
+- **Pertinence** : ⭐⭐⭐⭐
+
+**20. Kafka Summit - Sessions techniques**
+- **URL** : https://www.kafka-summit.org/
+- **Vidéos recommandées** :
+  - "Event-Driven Architecture Patterns"
+  - "Kafka Streams in Production"
+- **Pertinence** : ⭐⭐⭐⭐
+
+---
+
+### 🛠️ Outils & Frameworks (Documentation)
+
+| Outil | Type | Documentation | Pertinence |
+|-------|------|---------------|-----------|
+| **Spring Boot** | Framework | https://spring.io/projects/spring-boot | ⭐⭐⭐⭐⭐ |
+| **Apache Kafka** | Message Broker | https://kafka.apache.org/ | ⭐⭐⭐⭐⭐ |
+| **Docker** | Conteneurisation | https://docs.docker.com/ | ⭐⭐⭐⭐⭐ |
+| **PostgreSQL** | Base de données | https://www.postgresql.org/docs/ | ⭐⭐⭐⭐ |
+| **Resilience4j** | Résilience | https://resilience4j.readme.io/ | ⭐⭐⭐⭐⭐ |
+| **Prometheus** | Métriques | https://prometheus.io/docs/ | ⭐⭐⭐⭐⭐ |
+| **Grafana** | Dashboards | https://grafana.com/docs/ | ⭐⭐⭐⭐⭐ |
+| **Jaeger** | Tracing | https://www.jaegertracing.io/docs/ | ⭐⭐⭐⭐⭐ |
+| **OpenLDAP** | Annuaire | https://www.openldap.org/doc/ | ⭐⭐⭐ |
+| **WireMock** | Mock HTTP | https://wiremock.org/docs/ | ⭐⭐⭐⭐ |
+| **Flyway** | Migration DB | https://flywaydb.org/documentation/ | ⭐⭐⭐⭐ |
+
+---
+
+### 📘 Lectures Complémentaires par Thématique
+
+#### Pour approfondir l'Architecture
+- **Domain-Driven Design** - Eric Evans (2003)
+- **Clean Architecture** - Robert C. Martin (2017)
+- **Fundamentals of Software Architecture** - Mark Richards, Neal Ford (2020)
+
+#### Pour approfondir Kafka
+- **Kafka Streams in Action** - Bill Bejeck (2018)
+- **Event Streaming with Kafka Streams and ksqlDB** - Mitch Seymour (2020)
+
+#### Pour approfondir la Sécurité
+- **OAuth 2 in Action** - Justin Richer, Antonio Sanso (2017)
+- **Spring Security in Action** - Laurențiu Spilcă (2020)
+
+#### Pour approfondir les Tests
+- **Testing Microservices with Mountebank** - Brandon Byars (2018)
+- **Continuous Delivery** - Jez Humble, David Farley (2010)
+
+---
+
+### 🔖 Résumé par Niveau de Priorité
+
+#### 🔴 **Lecture Essentielle (avant la formation)**
+1. Microservices Patterns - Chris Richardson (Chapitres 1, 3, 4)
+2. Building Microservices - Sam Newman (Chapitres 1-2)
+3. Martin Fowler - Circuit Breaker Pattern
+4. The Twelve-Factor App
+
+#### 🟡 **Lecture Recommandée (pendant/après la formation)**
+5. Kafka: The Definitive Guide (Chapitres 3-4)
+6. Release It! - Michael T. Nygard (Chapitre 5)
+7. Observability Engineering
+8. Documentation officielle Spring Boot et Kafka
+
+#### 🟢 **Lecture Complémentaire (approfondissement)**
+9. Event-Driven Architecture patterns
+10. Domain-Driven Design
+11. Articles académiques (CAP, Eventual Consistency)
+
+---
+
 ## 🎯 Méthodologie Pédagogique
 
 ### Structure A-B-C pour Chaque Module
